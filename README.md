@@ -1,7 +1,8 @@
 # dynago
 
 `dynago` is a super easy to use [DynamoDb](https://aws.amazon.com/dynamodb) library for [golang](https://golang.org).
-The philosophy behind `dynago` is to pull out the need for complex data structures to represent queries.
+The philosophy behind `dynago` is to keep it simple. This removes the need for complex data structures to represent
+queries and mutations.
 
 # example
 
