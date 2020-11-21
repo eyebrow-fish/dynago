@@ -16,14 +16,16 @@ func Equals(key string, val Val) Cond {
 	return Cond{key, val, eq}
 }
 
-type Val struct{}
+type Val struct {
+	val interface{}
+}
 
-func NewVal(v struct{}) Val {
-	return Val(v)
+func NewVal(v interface{}) Val {
+	return Val{v}
 }
 
 func (v Val) attrVal() (*dynamodb.AttributeValue, error) {
-	value := reflect.TypeOf(v)
+	value := reflect.TypeOf(v.val)
 	switch value.Kind() {
 	case reflect.String:
 		s := value.String()
