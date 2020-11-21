@@ -20,6 +20,8 @@ func TestVal_attrVal(t *testing.T) {
 		{"bool", NewVal(true), dynamodb.AttributeValue{BOOL: &b}, false},
 		{"int", NewVal(123), dynamodb.AttributeValue{N: &n}, false},
 		{"uint", NewVal(uint(123)), dynamodb.AttributeValue{N: &n}, false},
+		{"[]byte", NewVal([]byte{'f'}), dynamodb.AttributeValue{B: []byte{'f'}}, false},
+		{"[]string", NewVal([]string{"s"}), dynamodb.AttributeValue{SS: []*string{&s}}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

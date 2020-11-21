@@ -40,6 +40,19 @@ func (v Val) attrVal() (*dynamodb.AttributeValue, error) {
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		ns := strconv.Itoa(int(value.Uint()))
 		return &dynamodb.AttributeValue{N: &ns}, nil
+	case reflect.Slice:
+		switch value.Index(0).Kind() {
+		case reflect.String:
+			ss := value.Interface().([]string)
+			var strings []*string
+			for _, v := range ss {
+				strings = append(strings, &v)
+			}
+			return &dynamodb.AttributeValue{SS: strings}, nil
+		default:
+			bytes := value.Bytes()
+			return &dynamodb.AttributeValue{B: bytes}, nil
+		}
 	}
 	return nil, fmt.Errorf("invalid AttributeValue: %v", v)
 }
