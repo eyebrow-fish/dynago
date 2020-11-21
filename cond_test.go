@@ -6,17 +6,30 @@ import (
 	"testing"
 )
 
-func TestVal_attrVal_string(t *testing.T) {
-	inner := "string"
-	v := NewVal(inner)
-	ex := dynamodb.AttributeValue{S: &inner}
-
-	av, err := v.attrVal()
-
-	if err != nil {
-		t.Fatalf("expected error to be nil")
+func TestVal_attrVal(t *testing.T) {
+	s := "s"
+	b := true
+	n := "123"
+	tests := []struct {
+		name    string
+		val     Val
+		want    dynamodb.AttributeValue
+		wantErr bool
+	}{
+		{"string", NewVal("s"), dynamodb.AttributeValue{S: &s}, false},
+		{"bool", NewVal(true), dynamodb.AttributeValue{BOOL: &b}, false},
+		{"int", NewVal(123), dynamodb.AttributeValue{N: &n}, false},
+		{"uint", NewVal(uint(123)), dynamodb.AttributeValue{N: &n}, false},
 	}
-	if !reflect.DeepEqual(*av, ex) {
-		t.Fatalf("expected %v to equal %v", av, ex)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.val.attrVal()
+			if tt.wantErr == (err == nil) {
+				t.Fatalf("unexpected error state")
+			}
+			if err == nil && !reflect.DeepEqual(*got, tt.want) {
+				t.Fatalf("expected %v to equal %v", got, tt.want)
+			}
+		})
 	}
 }

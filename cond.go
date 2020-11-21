@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"reflect"
+	"strconv"
 )
 
 type Cond struct {
@@ -25,11 +26,20 @@ func NewVal(v interface{}) Val {
 }
 
 func (v Val) attrVal() (*dynamodb.AttributeValue, error) {
-	value := reflect.TypeOf(v.val)
+	value := reflect.ValueOf(v.val)
 	switch value.Kind() {
 	case reflect.String:
 		s := value.String()
 		return &dynamodb.AttributeValue{S: &s}, nil
+	case reflect.Bool:
+		b := value.Bool()
+		return &dynamodb.AttributeValue{BOOL: &b}, nil
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		ns := strconv.Itoa(int(value.Int()))
+		return &dynamodb.AttributeValue{N: &ns}, nil
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		ns := strconv.Itoa(int(value.Uint()))
+		return &dynamodb.AttributeValue{N: &ns}, nil
 	}
 	return nil, fmt.Errorf("invalid AttributeValue: %v", v)
 }
