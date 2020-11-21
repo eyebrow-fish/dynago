@@ -20,22 +20,22 @@ func NewTable(name string) (*Table, error) {
 	return &Table{name}, nil
 }
 
-func (t *Table) Query(conds ...Cond) (interface{}, error) {
-	keyConds := make(map[string]*dynamodb.Condition)
-	for _, v := range conds {
+func (t *Table) Query(cons ...Cond) (interface{}, error) {
+	keyCons := make(map[string]*dynamodb.Condition)
+	for _, v := range cons {
 		val, err := v.val.attrVal()
 		if err != nil {
 			return nil, err
 		}
 		compOp, err := v.op.compOp()
-		keyConds[v.key] = &dynamodb.Condition{
+		keyCons[v.key] = &dynamodb.Condition{
 			AttributeValueList: []*dynamodb.AttributeValue{val},
 			ComparisonOperator: compOp,
 		}
 	}
 	q := dynamodb.QueryInput{
 		TableName:     &t.name,
-		KeyConditions: keyConds,
+		KeyConditions: keyCons,
 	}
 	return dynamo.Query(&q)
 }
