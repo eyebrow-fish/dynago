@@ -16,12 +16,16 @@ func TestVal_attrVal(t *testing.T) {
 		want    dynamodb.AttributeValue
 		wantErr bool
 	}{
-		{"string", NewVal("s"), dynamodb.AttributeValue{S: &s}, false},
-		{"bool", NewVal(true), dynamodb.AttributeValue{BOOL: &b}, false},
-		{"int", NewVal(123), dynamodb.AttributeValue{N: &n}, false},
-		{"uint", NewVal(uint(123)), dynamodb.AttributeValue{N: &n}, false},
-		{"[]byte", NewVal([]byte{'f'}), dynamodb.AttributeValue{B: []byte{'f'}}, false},
-		{"[]string", NewVal([]string{"s"}), dynamodb.AttributeValue{SS: []*string{&s}}, false},
+		{name: "string", val: NewVal("s"), want: dynamodb.AttributeValue{S: &s}},
+		{name: "bool", val: NewVal(true), want: dynamodb.AttributeValue{BOOL: &b}},
+		{name: "int", val: NewVal(123), want: dynamodb.AttributeValue{N: &n}},
+		{name: "[]byte", val: NewVal([]byte{'f'}), want: dynamodb.AttributeValue{B: []byte{'f'}}},
+		{name: "[]string", val: NewVal([]string{"s"}), want: dynamodb.AttributeValue{SS: []*string{&s}}},
+		{name: "[]int", val: NewVal([]int{123}), want: dynamodb.AttributeValue{NS: []*string{&n}}},
+		{name: "[]val", val: NewVal([]Val{NewVal("s")}), want: dynamodb.AttributeValue{L: []*dynamodb.AttributeValue{{S: &s}}}},
+		{name: "map", val: NewVal(map[string]string{"k": "s"}), want: dynamodb.AttributeValue{
+			M: map[string]*dynamodb.AttributeValue{"k": {S: &s}},
+		}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -82,11 +82,8 @@ func (v Val) attrVal() (*dynamodb.AttributeValue, error) {
 	case reflect.Bool:
 		b := value.Bool()
 		return &dynamodb.AttributeValue{BOOL: &b}, nil
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+	case reflect.Int:
 		ns := strconv.Itoa(int(value.Int()))
-		return &dynamodb.AttributeValue{N: &ns}, nil
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		ns := strconv.Itoa(int(value.Uint()))
 		return &dynamodb.AttributeValue{N: &ns}, nil
 	case reflect.Slice:
 		switch value.Index(0).Kind() {
@@ -97,10 +94,39 @@ func (v Val) attrVal() (*dynamodb.AttributeValue, error) {
 				strings = append(strings, &v)
 			}
 			return &dynamodb.AttributeValue{SS: strings}, nil
-		default:
+		case reflect.Int:
+			ns := value.Interface().([]int)
+			var nums []*string
+			for _, v := range ns {
+				n := strconv.Itoa(v)
+				nums = append(nums, &n)
+			}
+			return &dynamodb.AttributeValue{NS: nums}, nil
+		case reflect.Uint8:
 			bytes := value.Bytes()
 			return &dynamodb.AttributeValue{B: bytes}, nil
+		default:
+			is := value.Interface().([]Val)
+			var values []*dynamodb.AttributeValue
+			for _, v := range is {
+				val, err := v.attrVal()
+				if err != nil {
+					return nil, err
+				}
+				values = append(values, val)
+			}
+			return &dynamodb.AttributeValue{L: values}, nil
 		}
+	case reflect.Map:
+		m := make(map[string]*dynamodb.AttributeValue)
+		for _, k := range value.MapKeys() {
+			val, err := NewVal(value.MapIndex(k).Interface()).attrVal()
+			if err != nil {
+				return nil, err
+			}
+			m[k.String()] = val
+		}
+		return &dynamodb.AttributeValue{M: m}, nil
 	}
 	return nil, fmt.Errorf("invalid AttributeValue: %v", v)
 }
@@ -108,8 +134,8 @@ func (v Val) attrVal() (*dynamodb.AttributeValue, error) {
 type op uint8
 
 const (
-	e   op = 0
-	ne  op = 1
+	e  op = 0
+	ne op = 1
 	c  op = 2
 	nc op = 3
 	ge op = 4
