@@ -14,8 +14,12 @@ type Table struct {
 }
 
 func NewTable(name string, dataType interface{}) (*Table, error) {
+	return NewTableWithConfig(name, dataType, *aws.NewConfig())
+}
+
+func NewTableWithConfig(name string, dataType interface{}, conf aws.Config) (*Table, error) {
 	var err error
-	sess, err = session.NewSession(aws.NewConfig())
+	sess, err = session.NewSession(&conf)
 	if err != nil {
 		return nil, err
 	}
@@ -23,7 +27,7 @@ func NewTable(name string, dataType interface{}) (*Table, error) {
 	return &Table{name, dataType}, nil
 }
 
-func (t *Table) Query(cons ...Cond) (interface{}, error) {
+func (t *Table) Query(cons ...Cond) ([]interface{}, error) {
 	keyCons := make(map[string]*dynamodb.Condition)
 	for _, v := range cons {
 		val, err := v.val.attrVal()
@@ -47,28 +51,31 @@ func (t *Table) Query(cons ...Cond) (interface{}, error) {
 	return t.buildResp(resp.Items)
 }
 
-func (t *Table) buildResp(items []map[string]*dynamodb.AttributeValue) (interface{}, error) {
-	r := reflect.New(reflect.TypeOf(t.dataType))
+func (t *Table) buildResp(items []map[string]*dynamodb.AttributeValue) ([]interface{}, error) {
+	var values []interface{}
 	for _, item := range items {
+		val := reflect.New(reflect.TypeOf(t.dataType))
 		for k, v := range item {
+			field := val.Elem().FieldByName(k)
 			if av := v.S; av != nil {
-				r.FieldByName(k).SetString(*av)
+				field.SetString(*av)
 			} else if av := v.BOOL; av != nil {
-				r.FieldByName(k).SetBool(*av)
+				field.SetBool(*av)
 			} else if av := v.N; av != nil {
 				n, err := strconv.Atoi(*av)
 				if err != nil {
 					return nil, err
 				}
-				r.FieldByName(k).SetInt(int64(n))
+				field.SetInt(int64(n))
 			} else if av := v.SS; av != nil {
-				r.FieldByName(k).Set(reflect.ValueOf(av))
+				field.Set(reflect.ValueOf(av))
 			} else if av := v.B; av != nil {
-				r.FieldByName(k).SetBytes(av)
+				field.SetBytes(av)
 			}
 		}
+		values = append(values, val.Elem().Interface())
 	}
-	return r, nil
+	return values, nil
 }
 
 var (

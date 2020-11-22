@@ -18,8 +18,8 @@ import (
 )
 
 type GenericItem struct {
-    part string
-    sort int
+    Part string
+    Sort int
 }
 
 func main() {
@@ -28,12 +28,12 @@ func main() {
         log.Fatalf("could not init table client: %v", err)
     }
     resp, err := table.Query(
-        dynago.Equals("part", dynago.NewVal("value")),
-        dynago.Equals("sort", dynago.NewVal(1234567)),
+        dynago.Equals("Part", dynago.NewVal("value")),
+        dynago.Equals("Sort", dynago.NewVal(1234567)),
     )
     if err != nil {
         log.Fatalf("error in query: %v", err)
     }
-    fmt.Println(resp.(GenericItem).part)
+    fmt.Println(resp[0].(GenericItem).Part)
 }
 ```
