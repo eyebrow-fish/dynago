@@ -17,8 +17,13 @@ import (
     "log"
 )
 
+type GenericItem struct {
+    part string
+    sort int
+}
+
 func main() {
-    table, err := dynago.NewTable("my-table")
+    table, err := dynago.NewTable("my-table", GenericItem{})
     if err != nil {
         log.Fatalf("could not init table client: %v", err)
     }
@@ -29,6 +34,6 @@ func main() {
     if err != nil {
         log.Fatalf("error in query: %v", err)
     }
-    fmt.Println(resp)
+    fmt.Println(resp.(GenericItem).part)
 }
 ```
