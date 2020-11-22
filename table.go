@@ -67,10 +67,10 @@ func (t *Table) buildResp(items []map[string]*dynamodb.AttributeValue) ([]interf
 					return nil, err
 				}
 				field.SetInt(int64(n))
-			} else if av := v.SS; av != nil {
-				field.Set(reflect.ValueOf(av))
 			} else if av := v.B; av != nil {
 				field.SetBytes(av)
+			} else if v.SS != nil || v.BS != nil || v.NS != nil || v.L != nil || v.M != nil {
+				field.Set(reflect.ValueOf(av))
 			}
 		}
 		values = append(values, val.Elem().Interface())
