@@ -5,7 +5,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"reflect"
-	"strconv"
 )
 
 type Table struct {
@@ -74,21 +73,11 @@ func (t *Table) buildResp(items []map[string]*dynamodb.AttributeValue) ([]interf
 		val := reflect.New(reflect.TypeOf(t.dataType))
 		for k, v := range item {
 			field := val.Elem().FieldByName(k)
-			if av := v.S; av != nil {
-				field.SetString(*av)
-			} else if av := v.BOOL; av != nil {
-				field.SetBool(*av)
-			} else if av := v.N; av != nil {
-				n, err := strconv.Atoi(*av)
-				if err != nil {
-					return nil, err
-				}
-				field.SetInt(int64(n))
-			} else if av := v.B; av != nil {
-				field.SetBytes(av)
-			} else if v.SS != nil || v.BS != nil || v.NS != nil || v.L != nil || v.M != nil {
-				field.Set(reflect.ValueOf(av))
+			value, err := buildValue(v)
+			if err != nil {
+				return nil, err
 			}
+			field.Set(reflect.ValueOf(value))
 		}
 		values = append(values, val.Elem().Interface())
 	}
