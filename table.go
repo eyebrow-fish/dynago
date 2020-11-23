@@ -72,12 +72,11 @@ func (t *Table) buildResp(items []map[string]*dynamodb.AttributeValue) ([]interf
 	for _, item := range items {
 		val := reflect.New(reflect.TypeOf(t.dataType))
 		for k, v := range item {
-			field := val.Elem().FieldByName(k)
 			value, err := buildValue(v)
 			if err != nil {
 				return nil, err
 			}
-			field.Set(reflect.ValueOf(value))
+			val.Elem().FieldByName(k).Set(reflect.ValueOf(value))
 		}
 		values = append(values, val.Elem().Interface())
 	}
