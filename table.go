@@ -59,12 +59,32 @@ func (t *Table) Delete(keys map[string]Val) error {
 		}
 		avKeys[k] = val
 	}
-	q := dynamodb.DeleteItemInput{
+	d := dynamodb.DeleteItemInput{
 		TableName: &t.name,
 		Key:       avKeys,
 	}
-	_, err := dynamo.DeleteItem(&q)
+	_, err := dynamo.DeleteItem(&d)
 	return err
+}
+
+func (t *Table) Put(keys map[string]Val) ([]interface{}, error) {
+	avKeys := make(map[string]*dynamodb.AttributeValue)
+	for k, v := range keys {
+		val, err := v.attrVal()
+		if err != nil {
+			return nil, err
+		}
+		avKeys[k] = val
+	}
+	p := dynamodb.PutItemInput{
+		TableName: &t.name,
+		Item: avKeys,
+	}
+	resp, err := dynamo.PutItem(&p)
+	if err != nil {
+		return nil, err
+	}
+	return t.buildResp([]map[string]*dynamodb.AttributeValue{resp.Attributes})
 }
 
 func (t *Table) buildResp(items []map[string]*dynamodb.AttributeValue) ([]interface{}, error) {
