@@ -39,9 +39,11 @@ func (t *Table) Query(cons ...Cond) ([]interface{}, error) {
 			ComparisonOperator: compOp,
 		}
 	}
+	proj := projOf(t.dataType)
 	q := dynamodb.QueryInput{
-		TableName:     &t.name,
-		KeyConditions: keyCons,
+		TableName:            &t.name,
+		KeyConditions:        keyCons,
+		ProjectionExpression: &proj,
 	}
 	resp, err := dynamo.Query(&q)
 	if err != nil {
