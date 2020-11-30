@@ -60,3 +60,15 @@ func buildValue(av *dynamodb.AttributeValue) (interface{}, error) {
 	}
 	return nil, fmt.Errorf("could not build value %v", av)
 }
+
+func toAvMap(item map[string]Val) (map[string]*dynamodb.AttributeValue, error) {
+	avItem := make(map[string]*dynamodb.AttributeValue)
+	for k, v := range item {
+		val, err := v.attrVal()
+		if err != nil {
+			return nil, err
+		}
+		avItem[k] = val
+	}
+	return avItem, nil
+}

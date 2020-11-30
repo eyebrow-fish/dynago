@@ -41,3 +41,39 @@ func Test_buildValue(t *testing.T) {
 		})
 	}
 }
+
+func Test_toAvMap(t *testing.T) {
+	type args struct {
+		item map[string]Val
+	}
+	s := "s"
+	tests := []struct {
+		name    string
+		args    args
+		want    map[string]*dynamodb.AttributeValue
+		wantErr bool
+	}{
+		{
+			name: "one level",
+			args: args{item: map[string]Val{"f": NewVal("s")}},
+			want: map[string]*dynamodb.AttributeValue{"f": {S: &s}},
+		},
+		{
+			name: "nested",
+			args: args{item: map[string]Val{"f": NewVal(map[string]string{"f1": "s"})}},
+			want: map[string]*dynamodb.AttributeValue{"f": {M: map[string]*dynamodb.AttributeValue{"f1": {S: &s}}}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := toAvMap(tt.args.item)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("toAvMap() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("toAvMap() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

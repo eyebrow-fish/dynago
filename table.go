@@ -53,36 +53,28 @@ func (t *Table) Query(cons ...Cond) ([]interface{}, error) {
 }
 
 func (t *Table) Delete(keys map[string]Val) error {
-	avKeys := make(map[string]*dynamodb.AttributeValue)
-	for k, v := range keys {
-		val, err := v.attrVal()
-		if err != nil {
-			return err
-		}
-		avKeys[k] = val
+	avKeys, err := toAvMap(keys)
+	if err != nil {
+		return err
 	}
 	d := dynamodb.DeleteItemInput{
 		TableName: &t.name,
 		Key:       avKeys,
 	}
-	_, err := dynamo.DeleteItem(&d)
+	_, err = dynamo.DeleteItem(&d)
 	return err
 }
 
 func (t *Table) Put(item map[string]Val) error {
-	avItem := make(map[string]*dynamodb.AttributeValue)
-	for k, v := range item {
-		val, err := v.attrVal()
-		if err != nil {
-			return err
-		}
-		avItem[k] = val
+	avItem, err := toAvMap(item)
+	if err != nil {
+		return err
 	}
 	p := dynamodb.PutItemInput{
 		TableName: &t.name,
 		Item:      avItem,
 	}
-	_, err := dynamo.PutItem(&p)
+	_, err = dynamo.PutItem(&p)
 	return err
 }
 
