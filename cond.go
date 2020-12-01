@@ -79,12 +79,12 @@ func Between(key string, val Val) Cond {
 
 // NotNil asserts that the value of the item is not nil.
 func NotNil(key string) Cond {
-	return Cond{key, nil, nn}
+	return Cond{key, NewVal(nil), nn}
 }
 
 // Nil asserts that the value of the item is nil.
 func Nil(key string) Cond {
-	return Cond{key, nil, n}
+	return Cond{key, NewVal(nil), n}
 }
 
 // Begins asserts that the value of the item begins with
