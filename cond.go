@@ -5,60 +5,90 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 )
 
+// A Cond is a basic condition for DynamoDb queries.
 type Cond struct {
 	key string
 	val Val
 	op  op
 }
 
+// Equals asserts the value of the item must be exactly
+// equal to the given value.
 func Equals(key string, val Val) Cond {
 	return Cond{key, val, e}
 }
 
+// NotEquals is the exact inverse of Equals, asserting
+// that the value of the item must not be equal to the
+// given value.
 func NotEquals(key string, val Val) Cond {
 	return Cond{key, val, ne}
 }
 
+// Contains asserts the value of the item should contain
+// the given value.
 func Contains(key string, val Val) Cond {
 	return Cond{key, val, c}
 }
 
+// NotContains is the exact inverse of Contains, asserting
+// that the value of the item should not contain the given
+// value.
 func NotContains(key string, val Val) Cond {
 	return Cond{key, val, nc}
 }
 
+// GreaterOrEquals asserts the value of the item has a
+//value greater than or equal to the given value.
 func GreaterOrEquals(key string, val Val) Cond {
 	return Cond{key, val, ge}
 }
 
+// Greater asserts the value of the item has a value
+// greater than to the given value.
 func Greater(key string, val Val) Cond {
 	return Cond{key, val, g}
 }
 
+// LessOrEquals asserts the value of the item has a value
+// less than or equal to the given value.
 func LessOrEquals(key string, val Val) Cond {
 	return Cond{key, val, le}
 }
 
+// Less asserts the value of the item has a value
+// less than to the given value.
 func Less(key string, val Val) Cond {
 	return Cond{key, val, l}
 }
 
+// In asserts the value of the item must be contained
+// within the given value.
 func In(key string, val Val) Cond {
 	return Cond{key, val, i}
 }
 
+// Between asserts the value of the item must be between
+// the first index and the second index of the given
+// value.
+//
+// * Note that the Val given should be a slice or an array.
 func Between(key string, val Val) Cond {
 	return Cond{key, val, b}
 }
 
-func NotNil(key string, val Val) Cond {
-	return Cond{key, val, nn}
+// NotNil asserts that the value of the item is not nil.
+func NotNil(key string) Cond {
+	return Cond{key, nil, nn}
 }
 
-func Nil(key string, val Val) Cond {
-	return Cond{key, val, n}
+// Nil asserts that the value of the item is nil.
+func Nil(key string) Cond {
+	return Cond{key, nil, n}
 }
 
+// Begins asserts that the value of the item begins with
+// the given value.
 func Begins(key string, val Val) Cond {
 	return Cond{key, val, bw}
 }

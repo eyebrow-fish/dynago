@@ -72,9 +72,15 @@ func (t *Table) Query(cons ...Cond) ([]interface{}, error) {
 			return nil, err
 		}
 		compOp, err := v.op.compOp()
-		keyCons[v.key] = &dynamodb.Condition{
-			AttributeValueList: []*dynamodb.AttributeValue{val},
-			ComparisonOperator: compOp,
+		if v.op == n || v.op == nn {
+			keyCons[v.key] = &dynamodb.Condition{
+				ComparisonOperator: compOp,
+			}
+		} else {
+			keyCons[v.key] = &dynamodb.Condition{
+				AttributeValueList: []*dynamodb.AttributeValue{val},
+				ComparisonOperator: compOp,
+			}
 		}
 	}
 	proj := projOf(t.dataType)

@@ -7,10 +7,18 @@ import (
 	"strconv"
 )
 
+// A Val is a wrapper for dynamodb.AttributeValue.
+//
+// The reason for it's existence is the tidy up the
+// construction of said dynamodb.AttributeValue(s).
 type Val struct {
 	val interface{}
 }
 
+// NewVal constructs a Val of the given type.
+//
+// For example, passing a string in will create an
+// "S" dynamodb.AttributeValue.
 func NewVal(v interface{}) Val {
 	return Val{v}
 }
