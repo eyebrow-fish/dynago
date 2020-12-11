@@ -4,6 +4,17 @@
 The philosophy behind `dynago` is to keep it simple. This removes the need for complex data structures to represent
 queries and mutations.
 
+# features
+
+`dynago` is currently in a usable state, but it is decently unstable.
+
+There are a small set of features currently developed:
+ - Projections (uses table `dataType`)
+ - Queries
+ - Scans
+ - Deletes
+ - Puts
+
 # example
 
 A simple `Query` example.
