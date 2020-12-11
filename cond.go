@@ -145,3 +145,25 @@ func (o op) compOp() (*string, error) {
 	}
 	return &s, nil
 }
+
+func buildAvCons(cons []Cond) (map[string]*dynamodb.Condition, error) {
+	keyCons := make(map[string]*dynamodb.Condition)
+	for _, v := range cons {
+		val, err := v.val.attrVal()
+		if err != nil {
+			return nil, err
+		}
+		compOp, err := v.op.compOp()
+		if v.op == n || v.op == nn {
+			keyCons[v.key] = &dynamodb.Condition{
+				ComparisonOperator: compOp,
+			}
+		} else {
+			keyCons[v.key] = &dynamodb.Condition{
+				AttributeValueList: []*dynamodb.AttributeValue{val},
+				ComparisonOperator: compOp,
+			}
+		}
+	}
+	return keyCons, nil
+}

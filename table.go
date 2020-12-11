@@ -43,7 +43,7 @@ func NewTable(name string, dataType interface{}) (*Table, error) {
 // aws.Config will reuse the same dynamodb.DynamoDB client.
 func NewTableWithConfig(name string, dataType interface{}, conf aws.Config) (*Table, error) {
 	var confKey *aws.Config
-	for c, _ := range dynamoConf {
+	for c := range dynamoConf {
 		if reflect.DeepEqual(*c, conf) {
 			confKey = c
 		}
@@ -65,23 +65,9 @@ func NewTableWithConfig(name string, dataType interface{}, conf aws.Config) (*Ta
 // Cond(s) given. Additionally, the structure will match
 // the dataType parameter given to the Table constructor.
 func (t *Table) Query(cons ...Cond) ([]interface{}, error) {
-	keyCons := make(map[string]*dynamodb.Condition)
-	for _, v := range cons {
-		val, err := v.val.attrVal()
-		if err != nil {
-			return nil, err
-		}
-		compOp, err := v.op.compOp()
-		if v.op == n || v.op == nn {
-			keyCons[v.key] = &dynamodb.Condition{
-				ComparisonOperator: compOp,
-			}
-		} else {
-			keyCons[v.key] = &dynamodb.Condition{
-				AttributeValueList: []*dynamodb.AttributeValue{val},
-				ComparisonOperator: compOp,
-			}
-		}
+	keyCons, err := buildAvCons(cons)
+	if err != nil {
+		return nil, err
 	}
 	proj := projOf(t.dataType)
 	q := dynamodb.QueryInput{
@@ -129,6 +115,32 @@ func (t *Table) Put(item map[string]Val) error {
 	}
 	_, err = t.dynamoClient().PutItem(&p)
 	return err
+}
+
+// Scan is a method which scans over all items in a Table
+// and returns them if they match.
+//
+// This operation is slow and should only be used on smaller
+// tables or if you expect a slow response.
+//
+// A more proper solution is to structure your data better and
+// use Query.
+func (t *Table) Scan(cons ...Cond) (interface{}, error) {
+	keyCons, err := buildAvCons(cons)
+	if err != nil {
+		return nil, err
+	}
+	proj := projOf(t.dataType)
+	s := dynamodb.ScanInput{
+		TableName:            &t.name,
+		ScanFilter:           keyCons,
+		ProjectionExpression: &proj,
+	}
+	resp, err := t.dynamoClient().Scan(&s)
+	if err != nil {
+		return nil, err
+	}
+	return t.buildResp(resp.Items)
 }
 
 func (t *Table) dynamoClient() *dynamodb.DynamoDB {
