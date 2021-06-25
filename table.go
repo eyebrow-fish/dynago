@@ -50,18 +50,28 @@ func CreateTableWithOptions(name string, schema interface{}, options dynamodb.Op
 		attributes = append(attributes, fieldAttribute)
 	}
 
-	var provision int64 = 1
+	var keySchema []types.KeySchemaElement
 
 	//goland:noinspection GoNilness
+	keySchema = append(keySchema, types.KeySchemaElement{
+		AttributeName: attributes[0].AttributeName,
+		KeyType:       types.KeyTypeHash,
+	})
+
+	//goland:noinspection GoNilness
+	if len(attributes) > 1 {
+		keySchema = append(keySchema, types.KeySchemaElement{
+			AttributeName: attributes[1].AttributeName,
+			KeyType:       types.KeyTypeRange,
+		})
+	}
+
+	var provision int64 = 1
+
 	output, err := client.CreateTable(getContext(), &dynamodb.CreateTableInput{
 		TableName:            &name,
 		AttributeDefinitions: attributes,
-		KeySchema: []types.KeySchemaElement{
-			{
-				AttributeName: attributes[0].AttributeName,
-				KeyType:       types.KeyTypeHash,
-			},
-		},
+		KeySchema:            keySchema,
 		ProvisionedThroughput: &types.ProvisionedThroughput{
 			ReadCapacityUnits:  &provision,
 			WriteCapacityUnits: &provision,
@@ -78,9 +88,9 @@ func CreateTableWithOptions(name string, schema interface{}, options dynamodb.Op
 func getAttributeType(value interface{}) (types.ScalarAttributeType, error) {
 	switch value.(type) {
 	case string:
-		return types.ScalarAttributeTypeS, nil
+		return "S", nil
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64, complex64, complex128:
-		return types.ScalarAttributeTypeN, nil
+		return "N", nil
 	case bool:
 		return "BOOL", nil
 	default:

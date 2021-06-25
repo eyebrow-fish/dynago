@@ -13,7 +13,8 @@ import (
 
 func TestCreateTable(t *testing.T) {
 	type TestTable struct {
-		Id string
+		Id   int
+		Name string
 	}
 
 	process := setupLocalDynamo()
