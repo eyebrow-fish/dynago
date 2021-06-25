@@ -9,20 +9,20 @@ import (
 )
 
 type Table struct {
-	Name string
+	Name   string
+	Schema interface{}
 }
 
 func NewTable(name string, schema interface{}) (*Table, error) {
-	return nil, errors.New("unimplemented")
+	output, err := dbClient.DescribeTable(dbCtx, &dynamodb.DescribeTableInput{TableName: &name})
+	if err != nil {
+		return nil, err
+	}
+
+	return &Table{*output.Table.TableName, schema}, nil
 }
 
 func CreateTable(name string, schema interface{}) (*Table, error) {
-	return CreateTableWithOptions(name, schema, dynamodb.Options{})
-}
-
-func CreateTableWithOptions(name string, schema interface{}, options dynamodb.Options) (*Table, error) {
-	client := getClient(options)
-
 	schemaValue := reflect.ValueOf(schema)
 	schemaLength := schemaValue.NumField()
 
@@ -67,7 +67,7 @@ func CreateTableWithOptions(name string, schema interface{}, options dynamodb.Op
 
 	var provision int64 = 1
 
-	output, err := client.CreateTable(getContext(), &dynamodb.CreateTableInput{
+	output, err := dbClient.CreateTable(dbCtx, &dynamodb.CreateTableInput{
 		TableName:            &name,
 		AttributeDefinitions: attributes,
 		KeySchema:            keySchema,
@@ -81,7 +81,7 @@ func CreateTableWithOptions(name string, schema interface{}, options dynamodb.Op
 		return nil, err
 	}
 
-	return &Table{*output.TableDescription.TableName}, nil
+	return &Table{*output.TableDescription.TableName, schema}, nil
 }
 
 func getAttributeType(value interface{}) (types.ScalarAttributeType, error) {

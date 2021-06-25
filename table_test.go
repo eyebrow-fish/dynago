@@ -8,27 +8,40 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"testing"
 )
 
 func TestCreateTable(t *testing.T) {
-	type TestTable struct {
-		Id   int
-		Name string
-	}
-
 	process := setupLocalDynamo()
 	defer func() { panicOnError(process.Kill()) }()
 
-	table, err := dynago.CreateTableWithOptions("TestTable", TestTable{}, testOptions)
+	table, err := dynago.CreateTable("testTable", testTable{})
 	if err != nil {
 		t.Fatal("error creating table:", err)
 	}
 	if table == nil {
 		t.Fatal("table was nil")
 	}
-	if table.Name != "TestTable" {
-		t.Fatal("table was not called TestTable")
+	if table.Name != "testTable" {
+		t.Fatal("table was not called testTable")
+	}
+	if table.Schema != (testTable{}) {
+		t.Fatal("table was not", testTable{})
+	}
+}
+
+func TestNewTable(t *testing.T) {
+	process := setupLocalDynamo()
+	defer func() { panicOnError(process.Kill()) }()
+
+	created, _ := dynago.CreateTable("testTable", testTable{})
+	fetched, err := dynago.NewTable("testTable", testTable{})
+	if err != nil {
+		t.Fatal("error creating table:", err)
+	}
+	if !reflect.DeepEqual(created, fetched) {
+		t.Fatal("expected", *created, "but got", *fetched)
 	}
 }
 
@@ -39,6 +52,11 @@ var (
 		Credentials:      aws.CredentialsProviderFunc(func(ctx context.Context) (aws.Credentials, error) { return aws.Credentials{}, nil }),
 	}
 )
+
+type testTable struct {
+	Id   int
+	Name string
+}
 
 func setupLocalDynamo() *os.Process {
 	homeDir, err := os.UserHomeDir()
@@ -56,6 +74,8 @@ func setupLocalDynamo() *os.Process {
 
 	panicOnError(command.Start())
 	panicOnError(exec.Command("aws", "dynamodb", "list-tables", "--endpoint-url", "http://localhost:8000").Run())
+
+	dynago.UpdateOptions(testOptions)
 
 	return command.Process
 }
