@@ -31,6 +31,27 @@ func TestCreateTable(t *testing.T) {
 	}
 }
 
+func TestCreateTable_duplicate(t *testing.T) {
+	process := setupLocalDynamo()
+	defer func() { panicOnError(process.Kill()) }()
+
+	_, _ = dynago.CreateTable("testTable", testTable{})
+	_, err := dynago.CreateTable("testTable", testTable{})
+	if err == nil {
+		t.Fatal("expected an error to occur")
+	}
+}
+
+func TestCreateTable_noHash(t *testing.T) {
+	process := setupLocalDynamo()
+	defer func() { panicOnError(process.Kill()) }()
+
+	_, err := dynago.CreateTable("testTable", struct{}{})
+	if err == nil {
+		t.Fatal("expected an error to occur")
+	}
+}
+
 func TestNewTable(t *testing.T) {
 	process := setupLocalDynamo()
 	defer func() { panicOnError(process.Kill()) }()
@@ -42,6 +63,16 @@ func TestNewTable(t *testing.T) {
 	}
 	if !reflect.DeepEqual(created, fetched) {
 		t.Fatal("expected", *created, "but got", *fetched)
+	}
+}
+
+func TestNewTable_noTable(t *testing.T) {
+	process := setupLocalDynamo()
+	defer func() { panicOnError(process.Kill()) }()
+
+	_, err := dynago.NewTable("testTable", testTable{})
+	if err == nil {
+		t.Fatal("expected an error to occur")
 	}
 }
 
