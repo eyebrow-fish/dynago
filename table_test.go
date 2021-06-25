@@ -1,19 +1,31 @@
 package dynago_test
 
 import (
+	"context"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/eyebrow-fish/dynago"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"testing"
+)
+
+var (
+	testOptions = dynamodb.Options{
+		Region:           "us-west-2",
+		EndpointResolver: dynamodb.EndpointResolverFromURL("http://localhost:8000"),
+		Credentials:      aws.CredentialsProviderFunc(func(ctx context.Context) (aws.Credentials, error) { return aws.Credentials{}, nil }),
+	}
 )
 
 func TestCreateTable(t *testing.T) {
 	type TestTable struct{}
 
 	process := setupLocalDynamo()
-	defer panicOnError(process.Kill())
+	defer func() { panicOnError(process.Kill()) }()
 
-	table, err := dynago.CreateTable("TestTable", TestTable{})
+	table, err := dynago.CreateTableWithOptions("TestTable", TestTable{}, testOptions)
 	if err != nil {
 		t.Fatal("error creating table:", err)
 	}
@@ -26,15 +38,21 @@ func TestCreateTable(t *testing.T) {
 }
 
 func setupLocalDynamo() *os.Process {
+	homeDir, err := os.UserHomeDir()
+	panicOnError(err)
+
+	libDir := filepath.Join(homeDir, "dev", "dynamo-local-lib")
+
 	command := exec.Command(
 		"java",
-		"-Djava.library.path=~/dev/dynamo-local-lib/DynamoDBLocal_lib",
+		"-Djava.library.path="+filepath.Join(libDir, "DynamoDBLocal_lib"),
 		"-jar",
-		"~/dev/dynamo-local-lib/DynamoDBLocal.jar",
+		filepath.Join(libDir, "DynamoDBLocal.jar"),
 		"-sharedDb",
 	)
 
 	panicOnError(command.Start())
+	panicOnError(exec.Command("aws", "dynamodb", "list-tables", "--endpoint-url", "http://localhost:8000").Run())
 
 	return command.Process
 }
