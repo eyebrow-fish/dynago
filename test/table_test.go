@@ -30,16 +30,20 @@ func TestNewTable_noTable(t *testing.T) {
 	}
 }
 
-func TestTable_Query(t *testing.T) {
+func TestTable_QueryWithExpr(t *testing.T) {
 	process := setupLocalDynamo()
 	defer func() { panicOnError(process.Kill()) }()
 
 	_, _ = dynago.CreateTable("testTable", testTable{})
 	table, _ := dynago.NewTable("testTable", testTable{})
 
-	_, err := table.Put(testTable{123, "abc"})
+	item := testTable{123, "abc"}
+	putValue, err := table.Put(item)
 	if err != nil {
 		t.Fatal("unexpected error when inserting:", err)
+	}
+	if !reflect.DeepEqual(putValue, item) {
+		t.Fatal("expected", putValue, "to equal", item)
 	}
 
 	testValue, err := table.QueryWithExpr("Id = :Id", map[string]interface{}{":Id": 123})

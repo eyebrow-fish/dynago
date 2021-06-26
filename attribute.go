@@ -23,6 +23,7 @@ func constructItems(items []map[string]types.AttributeValue, to interface{}) ([]
 
 func constructItem(item map[string]types.AttributeValue, to interface{}) (interface{}, error) {
 	itemType := reflect.New(reflect.TypeOf(to))
+	itemValue := itemType.Elem()
 
 	for k, v := range item {
 		attribute, err := fromAttribute(v)
@@ -30,27 +31,26 @@ func constructItem(item map[string]types.AttributeValue, to interface{}) (interf
 			return nil, err
 		}
 
-		itemType.
+		itemValue.
 			FieldByName(k).
 			Set(reflect.ValueOf(attribute))
 	}
 
-	return itemType.Interface(), nil
+	return itemValue.Interface(), nil
 }
 
 func buildItem(item interface{}) (map[string]types.AttributeValue, error) {
 	itemValue := reflect.ValueOf(item)
+	itemType := reflect.TypeOf(item)
 	attributeValue := make(map[string]types.AttributeValue)
 
 	for i := 0; i < itemValue.NumField(); i++ {
-		field := itemValue.Field(i)
-
-		value, err := toAttributeValue(field.Interface())
+		value, err := toAttributeValue(itemValue.Field(i).Interface())
 		if err != nil {
 			return nil, err
 		}
 
-		attributeValue[field.Type().Name()] = value
+		attributeValue[itemType.Field(i).Name] = value
 	}
 
 	return attributeValue, nil

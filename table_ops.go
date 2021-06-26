@@ -9,6 +9,7 @@ import (
 
 func CreateTable(name string, schema interface{}) (*Table, error) {
 	schemaValue := reflect.ValueOf(schema)
+	schemaType := reflect.TypeOf(schema)
 	schemaLength := schemaValue.NumField()
 
 	if schemaLength < 1 {
@@ -17,11 +18,9 @@ func CreateTable(name string, schema interface{}) (*Table, error) {
 
 	var attributes []types.AttributeDefinition
 	for i := 0; i < schemaLength; i++ {
-		field := schemaValue.Field(i)
-		fieldType := field.Type()
-		fieldName := fieldType.Name()
+		fieldName := schemaType.Field(i).Name
 
-		attributeType, err := toAttributeType(field.Interface())
+		attributeType, err := toAttributeType(schemaValue.Field(i).Interface())
 		if err != nil {
 			return nil, err
 		}
