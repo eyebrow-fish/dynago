@@ -2,7 +2,7 @@ package test
 
 import (
 	"github.com/eyebrow-fish/dynago"
-	"reflect"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -12,12 +12,9 @@ func TestNewTable(t *testing.T) {
 
 	created, _ := dynago.CreateTable("testTable", testTable{})
 	fetched, err := dynago.NewTable("testTable", testTable{})
-	if err != nil {
-		t.Fatal("error creating table:", err)
-	}
-	if !reflect.DeepEqual(created, fetched) {
-		t.Fatal("expected", *created, "but got", *fetched)
-	}
+
+	assert.NoError(t, err)
+	assert.Equal(t, created, fetched)
 }
 
 func TestNewTable_noTable(t *testing.T) {
@@ -25,9 +22,8 @@ func TestNewTable_noTable(t *testing.T) {
 	defer func() { panicOnError(process.Kill()) }()
 
 	_, err := dynago.NewTable("testTable", testTable{})
-	if err == nil {
-		t.Fatal("expected an error to occur")
-	}
+
+	assert.Error(t, err)
 }
 
 func TestTable_QueryWithExpr(t *testing.T) {
@@ -39,31 +35,16 @@ func TestTable_QueryWithExpr(t *testing.T) {
 
 	item := testTable{123, "abc"}
 	putValue, err := table.Put(item)
-	if err != nil {
-		t.Fatal("unexpected error when inserting:", err)
-	}
-	if !reflect.DeepEqual(putValue, item) {
-		t.Fatal("expected", putValue, "to equal", item)
-	}
+	assert.NoError(t, err)
+	assert.Equal(t, putValue, item)
 
 	testValue, err := table.QueryWithExpr("Id = :Id", map[string]interface{}{":Id": 123})
-	if err != nil {
-		t.Fatal("unexpected error when querying:", err)
-	}
-	if len(testValue) == 0 {
-		t.Fatal("expected at least one response item")
-	}
+	assert.NoError(t, err)
+	assert.NotEmpty(t, testValue)
 
 	value, ok := testValue[0].(testTable)
-	if !ok {
-		t.Fatal("response was not testTable")
-	}
-	if value.Id != 123 {
-		t.Fatal("expected 123 but got", value.Id)
-	}
-	if value.Name != "abc" {
-		t.Fatal("expected abc but got", value.Name)
-	}
+	assert.True(t, ok)
+	assert.Equal(t, testTable{123, "abc"}, value)
 }
 
 func TestTable_Scan(t *testing.T) {
@@ -75,40 +56,24 @@ func TestTable_Scan(t *testing.T) {
 
 	item1 := testTable{123, "abc"}
 	putValue1, err := table.Put(item1)
-	if err != nil {
-		t.Fatal("unexpected error when inserting:", err)
-	}
-	if !reflect.DeepEqual(putValue1, item1) {
-		t.Fatal("expected", putValue1, "to equal", item1)
-	}
+	assert.NoError(t, err)
+	assert.Equal(t, item1, putValue1)
 
 	item2 := testTable{456, "def"}
 	putValue2, err := table.Put(item2)
-	if err != nil {
-		t.Fatal("unexpected error when inserting:", err)
-	}
-	if !reflect.DeepEqual(putValue2, item2) {
-		t.Fatal("expected", putValue2, "to equal", item2)
-	}
+	assert.NoError(t, err)
+	assert.Equal(t, item2, putValue2)
 
 	scan, err := table.Scan()
-	if err != nil {
-		t.Fatal("unexpected error when querying:", err)
-	}
-	if len(scan) != 2 {
-		t.Fatal("expected 2 items but got", len(scan))
-	}
+	assert.NoError(t, err)
 
-	value, ok := scan[0].(testTable)
-	if !ok {
-		t.Fatal("response was not testTable")
-	}
-	if value.Id != 123 {
-		t.Fatal("expected 123 but got", value.Id)
-	}
-	if value.Name != "abc" {
-		t.Fatal("expected abc but got", value.Name)
-	}
+	value1, ok1 := scan[0].(testTable)
+	assert.True(t, ok1)
+	assert.Equal(t, testTable{123, "abc"}, value1)
+
+	value2, ok2 := scan[1].(testTable)
+	assert.True(t, ok2)
+	assert.Equal(t, testTable{456, "def"}, value2)
 }
 
 type testTable struct {

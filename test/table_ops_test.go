@@ -2,7 +2,7 @@ package test
 
 import (
 	"github.com/eyebrow-fish/dynago"
-	"reflect"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -11,18 +11,9 @@ func TestCreateTable(t *testing.T) {
 	defer func() { panicOnError(process.Kill()) }()
 
 	table, err := dynago.CreateTable("testTable", testTable{})
-	if err != nil {
-		t.Fatal("error creating table:", err)
-	}
-	if table == nil {
-		t.Fatal("table was nil")
-	}
-	if table.Name != "testTable" {
-		t.Fatal("table was not called testTable")
-	}
-	if table.Schema != (testTable{}) {
-		t.Fatal("table was not", testTable{})
-	}
+	assert.NoError(t, err)
+	assert.NotNil(t, table)
+	assert.Equal(t, &dynago.Table{Name: "testTable", Schema: testTable{}}, table)
 }
 
 func TestCreateTable_duplicate(t *testing.T) {
@@ -31,9 +22,7 @@ func TestCreateTable_duplicate(t *testing.T) {
 
 	_, _ = dynago.CreateTable("testTable", testTable{})
 	_, err := dynago.CreateTable("testTable", testTable{})
-	if err == nil {
-		t.Fatal("expected an error to occur")
-	}
+	assert.Error(t, err)
 }
 
 func TestCreateTable_noHash(t *testing.T) {
@@ -41,9 +30,7 @@ func TestCreateTable_noHash(t *testing.T) {
 	defer func() { panicOnError(process.Kill()) }()
 
 	_, err := dynago.CreateTable("testTable", struct{}{})
-	if err == nil {
-		t.Fatal("expected an error to occur")
-	}
+	assert.Error(t, err)
 }
 
 func TestListTables(t *testing.T) {
@@ -54,11 +41,7 @@ func TestListTables(t *testing.T) {
 	_, _ = dynago.CreateTable("testTable2", testTable{})
 
 	tableNames, err := dynago.ListTables()
-	if err != nil {
-		t.Fatal("error occurred:", err)
-	}
-	expected := []string{"testTable1", "testTable2"}
-	if !reflect.DeepEqual(tableNames, expected) {
-		t.Fatal("expected", tableNames, "to equal", expected)
-	}
+	assert.NoError(t, err)
+
+	assert.Equal(t, []string{"testTable1", "testTable2"}, tableNames)
 }
