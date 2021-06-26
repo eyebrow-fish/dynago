@@ -40,11 +40,11 @@ func (t Table) QueryWithExpr(expr string, values map[string]interface{}) ([]inte
 		return nil, err
 	}
 
-	return buildItems(output.Items, t.Schema)
+	return constructItems(output.Items, t.Schema)
 }
 
 func (t Table) Put(item interface{}) (interface{}, error) {
-	toPut, err := destructureItem(item)
+	toPut, err := buildItem(item)
 	if err != nil {
 		return nil, err
 	}

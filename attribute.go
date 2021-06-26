@@ -7,10 +7,10 @@ import (
 	"strconv"
 )
 
-func buildItems(items []map[string]types.AttributeValue, to interface{}) ([]interface{}, error) {
+func constructItems(items []map[string]types.AttributeValue, to interface{}) ([]interface{}, error) {
 	var outputItems []interface{}
 	for _, item := range items {
-		i, err := buildItem(item, to)
+		i, err := constructItem(item, to)
 		if err != nil {
 			return nil, err
 		}
@@ -21,7 +21,7 @@ func buildItems(items []map[string]types.AttributeValue, to interface{}) ([]inte
 	return outputItems, nil
 }
 
-func buildItem(item map[string]types.AttributeValue, to interface{}) (interface{}, error) {
+func constructItem(item map[string]types.AttributeValue, to interface{}) (interface{}, error) {
 	itemType := reflect.New(reflect.TypeOf(to))
 
 	for k, v := range item {
@@ -38,7 +38,7 @@ func buildItem(item map[string]types.AttributeValue, to interface{}) (interface{
 	return itemType.Interface(), nil
 }
 
-func destructureItem(item interface{}) (map[string]types.AttributeValue, error) {
+func buildItem(item interface{}) (map[string]types.AttributeValue, error) {
 	itemValue := reflect.ValueOf(item)
 	attributeValue := make(map[string]types.AttributeValue)
 
