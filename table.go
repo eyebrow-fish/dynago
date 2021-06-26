@@ -43,6 +43,15 @@ func (t Table) QueryWithExpr(expr string, values map[string]interface{}) ([]inte
 	return constructItems(output.Items, t.Schema)
 }
 
+func (t Table) Scan() ([]interface{}, error) {
+	output, err := dbClient.Scan(dbCtx, &dynamodb.ScanInput{TableName: &t.Name})
+	if err != nil {
+		return nil, err
+	}
+
+	return constructItems(output.Items, t.Schema)
+}
+
 func (t Table) Put(item interface{}) (interface{}, error) {
 	toPut, err := buildItem(item)
 	if err != nil {
