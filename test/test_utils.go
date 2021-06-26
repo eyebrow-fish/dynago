@@ -1,6 +1,9 @@
 package test
 
 import (
+	"context"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -37,3 +40,11 @@ func panicOnError(err error) {
 
 	panic(err)
 }
+
+var (
+	testOptions = dynamodb.Options{
+		Region:           "us-west-2",
+		EndpointResolver: dynamodb.EndpointResolverFromURL("http://localhost:8000"),
+		Credentials:      aws.CredentialsProviderFunc(func(ctx context.Context) (aws.Credentials, error) { return aws.Credentials{}, nil }),
+	}
+)

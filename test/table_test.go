@@ -1,9 +1,6 @@
 package test
 
 import (
-	"context"
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/eyebrow-fish/dynago"
 	"reflect"
 	"testing"
@@ -59,14 +56,6 @@ func TestTable_Query(t *testing.T) {
 		t.Fatal("expected abc but got", value.Name)
 	}
 }
-
-var (
-	testOptions = dynamodb.Options{
-		Region:           "us-west-2",
-		EndpointResolver: dynamodb.EndpointResolverFromURL("http://localhost:8000"),
-		Credentials:      aws.CredentialsProviderFunc(func(ctx context.Context) (aws.Credentials, error) { return aws.Credentials{}, nil }),
-	}
-)
 
 type testTable struct {
 	Id   int
