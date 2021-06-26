@@ -49,7 +49,18 @@ func fromAttribute(attribute types.AttributeValue) (interface{}, error) {
 	case *types.AttributeValueMemberSS:
 		return attribute.(*types.AttributeValueMemberSS).Value, nil
 	case *types.AttributeValueMemberNS:
-		return attribute.(*types.AttributeValueMemberNS).Value, nil
+		var numbers []int
+
+		for _, v := range attribute.(*types.AttributeValueMemberNS).Value {
+			number, err := strconv.Atoi(v)
+			if err != nil {
+				return nil, err
+			}
+
+			numbers = append(numbers, number)
+		}
+
+		return numbers, nil
 	case *types.AttributeValueMemberBS:
 		return attribute.(*types.AttributeValueMemberBS).Value, nil
 	case *types.AttributeValueMemberM:
