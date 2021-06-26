@@ -2,7 +2,6 @@ package dynago
 
 import (
 	"errors"
-	"fmt"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"reflect"
@@ -22,6 +21,30 @@ func NewTable(name string, schema interface{}) (*Table, error) {
 	return &Table{*output.Table.TableName, schema}, nil
 }
 
+func (t Table) QueryWithExpr(expr string, values map[string]interface{}) ([]interface{}, error) {
+	attributeValues := make(map[string]types.AttributeValue)
+	for k, v := range values {
+		value, err := toAttributeValue(v)
+		if err != nil {
+			return nil, err
+		}
+
+		attributeValues[k] = value
+	}
+
+	output, err := dbClient.Query(dbCtx, &dynamodb.QueryInput{
+		TableName:                 &t.Name,
+		ExpressionAttributeValues: attributeValues,
+		KeyConditionExpression:    &expr,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return buildItems(output.Items, t.Schema)
+}
+
 func CreateTable(name string, schema interface{}) (*Table, error) {
 	schemaValue := reflect.ValueOf(schema)
 	schemaLength := schemaValue.NumField()
@@ -36,7 +59,7 @@ func CreateTable(name string, schema interface{}) (*Table, error) {
 		fieldType := field.Type()
 		fieldName := fieldType.Name()
 
-		attributeType, err := getAttributeType(field.Interface())
+		attributeType, err := toAttributeType(field.Interface())
 		if err != nil {
 			return nil, err
 		}
@@ -82,17 +105,4 @@ func CreateTable(name string, schema interface{}) (*Table, error) {
 	}
 
 	return &Table{*output.TableDescription.TableName, schema}, nil
-}
-
-func getAttributeType(value interface{}) (types.ScalarAttributeType, error) {
-	switch value.(type) {
-	case string:
-		return "S", nil
-	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64, complex64, complex128:
-		return "N", nil
-	case bool:
-		return "BOOL", nil
-	default:
-		return "", fmt.Errorf("unsupported type: %v", reflect.TypeOf(value))
-	}
 }
