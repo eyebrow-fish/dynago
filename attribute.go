@@ -38,6 +38,24 @@ func buildItem(item map[string]types.AttributeValue, to interface{}) (interface{
 	return itemType.Interface(), nil
 }
 
+func destructureItem(item interface{}) (map[string]types.AttributeValue, error) {
+	itemValue := reflect.ValueOf(item)
+	attributeValue := make(map[string]types.AttributeValue)
+
+	for i := 0; i < itemValue.NumField(); i++ {
+		field := itemValue.Field(i)
+
+		value, err := toAttributeValue(field.Interface())
+		if err != nil {
+			return nil, err
+		}
+
+		attributeValue[field.Type().Name()] = value
+	}
+
+	return attributeValue, nil
+}
+
 func fromAttribute(attribute types.AttributeValue) (interface{}, error) {
 	switch attribute.(type) {
 	case *types.AttributeValueMemberS:

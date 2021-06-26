@@ -42,3 +42,17 @@ func (t Table) QueryWithExpr(expr string, values map[string]interface{}) ([]inte
 
 	return buildItems(output.Items, t.Schema)
 }
+
+func (t Table) Put(item interface{}) (interface{}, error) {
+	toPut, err := destructureItem(item)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = dbClient.PutItem(dbCtx, &dynamodb.PutItemInput{
+		TableName: &t.Name,
+		Item:      toPut,
+	})
+
+	return item, err
+}

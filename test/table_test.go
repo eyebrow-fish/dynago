@@ -37,6 +37,11 @@ func TestTable_Query(t *testing.T) {
 	_, _ = dynago.CreateTable("testTable", testTable{})
 	table, _ := dynago.NewTable("testTable", testTable{})
 
+	_, err := table.Put(testTable{123, "abc"})
+	if err != nil {
+		t.Fatal("unexpected error when inserting:", err)
+	}
+
 	testValue, err := table.QueryWithExpr("Id = :Id", map[string]interface{}{":Id": 123})
 	if err != nil {
 		t.Fatal("unexpected error when querying:", err)
