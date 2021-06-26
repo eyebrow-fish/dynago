@@ -2,6 +2,7 @@ package test
 
 import (
 	"github.com/eyebrow-fish/dynago"
+	"reflect"
 	"testing"
 )
 
@@ -42,5 +43,22 @@ func TestCreateTable_noHash(t *testing.T) {
 	_, err := dynago.CreateTable("testTable", struct{}{})
 	if err == nil {
 		t.Fatal("expected an error to occur")
+	}
+}
+
+func TestListTables(t *testing.T) {
+	process := setupLocalDynamo()
+	defer func() { panicOnError(process.Kill()) }()
+
+	_, _ = dynago.CreateTable("testTable1", testTable{})
+	_, _ = dynago.CreateTable("testTable2", testTable{})
+
+	tableNames, err := dynago.ListTables()
+	if err != nil {
+		t.Fatal("error occurred:", err)
+	}
+	expected := []string{"testTable1", "testTable2"}
+	if !reflect.DeepEqual(tableNames, expected) {
+		t.Fatal("expected", tableNames, "to equal", expected)
 	}
 }

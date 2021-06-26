@@ -2,6 +2,7 @@ package dynago
 
 import (
 	"errors"
+	"fmt"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"reflect"
@@ -66,4 +67,13 @@ func CreateTable(name string, schema interface{}) (*Table, error) {
 	}
 
 	return &Table{*output.TableDescription.TableName, schema}, nil
+}
+
+func ListTables() ([]string, error) {
+	output, err := dbClient.ListTables(dbCtx, &dynamodb.ListTablesInput{})
+	if err != nil {
+		return nil, fmt.Errorf("error listing tables: %v", err)
+	}
+
+	return output.TableNames, nil
 }
