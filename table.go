@@ -2,7 +2,6 @@ package dynago
 
 import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
 type Table struct {
@@ -20,18 +19,14 @@ func NewTable(name string, schema interface{}) (*Table, error) {
 }
 
 func (t Table) Query(condition Condition) ([]interface{}, error) {
-	return t.QueryWithExpr(condition.buildExpr())
+	expr, values := condition.buildExpr()
+	return t.QueryWithExpr(*expr, values)
 }
 
 func (t Table) QueryWithExpr(expr string, values map[string]interface{}) ([]interface{}, error) {
-	attributeValues := make(map[string]types.AttributeValue)
-	for k, v := range values {
-		attributeValues[k] = toAttributeValue(v)
-	}
-
 	output, err := dbClient.Query(dbCtx, &dynamodb.QueryInput{
 		TableName:                 &t.Name,
-		ExpressionAttributeValues: attributeValues,
+		ExpressionAttributeValues: fromMap(values),
 		KeyConditionExpression:    &expr,
 	})
 
@@ -42,8 +37,15 @@ func (t Table) QueryWithExpr(expr string, values map[string]interface{}) ([]inte
 	return constructItems(output.Items, t.Schema)
 }
 
-func (t Table) Scan() ([]interface{}, error) {
-	output, err := dbClient.Scan(dbCtx, &dynamodb.ScanInput{TableName: &t.Name})
+func (t Table) Scan(condition Condition) ([]interface{}, error) {
+	expr, values := condition.buildExpr()
+
+	output, err := dbClient.Scan(dbCtx, &dynamodb.ScanInput{
+		TableName:                 &t.Name,
+		ExpressionAttributeValues: fromMap(values),
+		FilterExpression:          expr,
+	})
+
 	if err != nil {
 		return nil, err
 	}

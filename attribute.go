@@ -7,6 +7,19 @@ import (
 	"strconv"
 )
 
+func fromMap(values map[string]interface{}) map[string]types.AttributeValue {
+	if values == nil {
+		return nil
+	}
+
+	attributeValues := make(map[string]types.AttributeValue)
+	for k, v := range values {
+		attributeValues[k] = toAttributeValue(v)
+	}
+
+	return attributeValues
+}
+
 func constructItems(items []map[string]types.AttributeValue, to interface{}) ([]interface{}, error) {
 	var outputItems []interface{}
 	for _, item := range items {

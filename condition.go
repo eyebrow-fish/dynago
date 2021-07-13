@@ -11,13 +11,17 @@ type Condition struct {
 // This is a super quick workaround for that. Enjoy.
 func (c Condition) qualifiedFieldName() string { return c.fieldName + "_expr" }
 
-func (c Condition) buildExpr() (string, map[string]interface{}) {
+func (c Condition) buildExpr() (*string, map[string]interface{}) {
+	if c.conditionType == all {
+		return nil, nil
+	}
+
 	values := make(map[string]interface{})
 	values[":"+c.qualifiedFieldName()] = c.rawValue()
-	expr := c.String()
+	currExpr := c.String()
 
 	if c.childClause == nil {
-		return expr, values
+		return &currExpr, values
 	}
 
 	childExpr, childValues := c.childClause.cond.buildExpr()
@@ -25,7 +29,8 @@ func (c Condition) buildExpr() (string, map[string]interface{}) {
 		values[k] = v
 	}
 
-	return expr + c.childClause.opString() + childExpr, values
+	expr := currExpr + c.childClause.opString() + *childExpr
+	return &expr, values
 }
 
 func (c Condition) rawValue() (rawValue interface{}) {
@@ -75,6 +80,7 @@ func (c Condition) String() string {
 	}
 }
 
+func All() Condition { return Condition{conditionType: all} }
 func Eq(fieldName string, value Value) Condition {
 	return Condition{fieldName: fieldName, values: []Value{value}, conditionType: eq}
 }
@@ -111,6 +117,7 @@ const (
 	gte
 	in
 	bt
+	all
 )
 
 type conditionChildClause struct {

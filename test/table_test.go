@@ -92,7 +92,7 @@ func TestTable_Query_conditionsOnAllFields(t *testing.T) {
 	assert.Equal(t, testTable{123, "abc"}, value)
 }
 
-func TestTable_Scan(t *testing.T) {
+func TestTable_Scan_all(t *testing.T) {
 	process := setupLocalDynamo()
 	defer func() { panicOnError(process.Kill()) }()
 
@@ -109,7 +109,7 @@ func TestTable_Scan(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, item2, putValue2)
 
-	scan, err := table.Scan()
+	scan, err := table.Scan(dynago.All())
 	assert.NoError(t, err)
 
 	value1, ok1 := scan[0].(testTable)
