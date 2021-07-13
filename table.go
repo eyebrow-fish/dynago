@@ -22,12 +22,7 @@ func NewTable(name string, schema interface{}) (*Table, error) {
 func (t Table) QueryWithExpr(expr string, values map[string]interface{}) ([]interface{}, error) {
 	attributeValues := make(map[string]types.AttributeValue)
 	for k, v := range values {
-		value, err := toAttributeValue(v)
-		if err != nil {
-			return nil, err
-		}
-
-		attributeValues[k] = value
+		attributeValues[k] = toAttributeValue(v)
 	}
 
 	output, err := dbClient.Query(dbCtx, &dynamodb.QueryInput{
@@ -53,12 +48,9 @@ func (t Table) Scan() ([]interface{}, error) {
 }
 
 func (t Table) Put(item interface{}) (interface{}, error) {
-	toPut, err := buildItem(item)
-	if err != nil {
-		return nil, err
-	}
+	toPut := buildItem(item)
 
-	_, err = dbClient.PutItem(dbCtx, &dynamodb.PutItemInput{
+	_, err := dbClient.PutItem(dbCtx, &dynamodb.PutItemInput{
 		TableName: &t.Name,
 		Item:      toPut,
 	})

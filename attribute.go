@@ -39,21 +39,18 @@ func constructItem(item map[string]types.AttributeValue, to interface{}) (interf
 	return itemValue.Interface(), nil
 }
 
-func buildItem(item interface{}) (map[string]types.AttributeValue, error) {
+func buildItem(item interface{}) map[string]types.AttributeValue {
 	itemValue := reflect.ValueOf(item)
 	itemType := reflect.TypeOf(item)
 	attributeValue := make(map[string]types.AttributeValue)
 
 	for i := 0; i < itemValue.NumField(); i++ {
-		value, err := toAttributeValue(itemValue.Field(i).Interface())
-		if err != nil {
-			return nil, err
-		}
+		value := toAttributeValue(itemValue.Field(i).Interface())
 
 		attributeValue[itemType.Field(i).Name] = value
 	}
 
-	return attributeValue, nil
+	return attributeValue
 }
 
 func fromAttribute(attribute types.AttributeValue) (interface{}, error) {
@@ -116,16 +113,16 @@ func fromAttribute(attribute types.AttributeValue) (interface{}, error) {
 	}
 }
 
-func toAttributeValue(value interface{}) (types.AttributeValue, error) {
+func toAttributeValue(value interface{}) types.AttributeValue {
 	switch value.(type) {
 	case string:
-		return &types.AttributeValueMemberS{Value: value.(string)}, nil
+		return &types.AttributeValueMemberS{Value: value.(string)}
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64, complex64, complex128:
-		return &types.AttributeValueMemberN{Value: strconv.Itoa(value.(int))}, nil
+		return &types.AttributeValueMemberN{Value: strconv.Itoa(value.(int))}
 	case []byte:
-		return &types.AttributeValueMemberB{Value: value.([]byte)}, nil
+		return &types.AttributeValueMemberB{Value: value.([]byte)}
 	case []string:
-		return &types.AttributeValueMemberSS{Value: value.([]string)}, nil
+		return &types.AttributeValueMemberSS{Value: value.([]string)}
 	case []int, []int8, []int16, []int32, []int64, []uint, []uint16, []uint32, []uint64, []float32, []float64, []complex64, []complex128:
 		var numbers []string
 
@@ -133,26 +130,19 @@ func toAttributeValue(value interface{}) (types.AttributeValue, error) {
 			numbers = append(numbers, strconv.Itoa(i))
 		}
 
-		return &types.AttributeValueMemberSS{Value: numbers}, nil
+		return &types.AttributeValueMemberSS{Value: numbers}
 	case [][]byte:
-		return &types.AttributeValueMemberBS{Value: value.([][]byte)}, nil
+		return &types.AttributeValueMemberBS{Value: value.([][]byte)}
 	case map[string]interface{}:
 		mapValues := make(map[string]types.AttributeValue)
 
 		for k, v := range value.(map[string]interface{}) {
-			mapValue, err := toAttributeValue(v)
-			if err != nil {
-				return nil, err
-			}
-
-			mapValues[k] = mapValue
+			mapValues[k] = toAttributeValue(v)
 		}
 
-		return &types.AttributeValueMemberM{Value: mapValues}, nil
-	case bool:
-		return &types.AttributeValueMemberBOOL{Value: value.(bool)}, nil
+		return &types.AttributeValueMemberM{Value: mapValues}
 	default:
-		return nil, fmt.Errorf("unsupported type: %v", reflect.TypeOf(value))
+		return &types.AttributeValueMemberBOOL{Value: value.(bool)}
 	}
 }
 
@@ -170,7 +160,7 @@ func toAttributeType(value interface{}) (types.ScalarAttributeType, error) {
 		return "NS", nil
 	case [][]byte:
 		return "BS", nil
-	case map[string]interface{}:
+	case map[string]interface{}, struct{}:
 		return "M", nil
 	case bool:
 		return "BOOL", nil
