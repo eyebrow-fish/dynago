@@ -9,6 +9,8 @@ type Table struct {
 	Schema interface{}
 }
 
+// NewTable creates a new Table.
+// A Table cannot be created if the Table does not exist in DynamoDb.
 func NewTable(name string, schema interface{}) (*Table, error) {
 	output, err := dbClient.DescribeTable(dbCtx, &dynamodb.DescribeTableInput{TableName: &name})
 	if err != nil {

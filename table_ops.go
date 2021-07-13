@@ -8,6 +8,20 @@ import (
 	"reflect"
 )
 
+// CreateTable attempts to create a DynamoDb table with the provided
+// name and schema. The schema parameter accepts an "interface" as a value
+// and it's field become the fields for the DynamoDb table.
+// Example:
+//
+//  type Person struct {
+//    Id  string
+//	  Age int
+//  }
+//
+//  dynago.CreateTable("TestTable", Person{})
+//
+// The created table exposes various DynamoDb API calls such as
+// Table.Query and Table.Put.
 func CreateTable(name string, schema interface{}) (*Table, error) {
 	schemaValue := reflect.ValueOf(schema)
 	schemaType := reflect.TypeOf(schema)
@@ -69,6 +83,8 @@ func CreateTable(name string, schema interface{}) (*Table, error) {
 	return &Table{*output.TableDescription.TableName, schema}, nil
 }
 
+// ListTables is a simple operation which returns the list of
+// all table names that are available to you.
 func ListTables() ([]string, error) {
 	output, err := dbClient.ListTables(dbCtx, &dynamodb.ListTablesInput{})
 	if err != nil {
