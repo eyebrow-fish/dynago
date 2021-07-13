@@ -37,6 +37,8 @@ func (t Table) QueryWithExpr(expr string, values map[string]interface{}) ([]inte
 	return constructItems(output.Items, t.Schema)
 }
 
+func (t Table) ScanAll() ([]interface{}, error) { return t.Scan(All()) }
+
 func (t Table) Scan(condition Condition) ([]interface{}, error) {
 	expr, values := condition.buildExpr()
 
@@ -53,12 +55,17 @@ func (t Table) Scan(condition Condition) ([]interface{}, error) {
 	return constructItems(output.Items, t.Schema)
 }
 
-func (t Table) Put(item interface{}) (interface{}, error) {
+func (t Table) Put(item interface{}) (interface{}, error) { return t.PutWithCondition(All(), item) }
+
+func (t Table) PutWithCondition(condition Condition, item interface{}) (interface{}, error) {
 	toPut := buildItem(item)
+	expr, values := condition.buildExpr()
 
 	_, err := dbClient.PutItem(dbCtx, &dynamodb.PutItemInput{
-		TableName: &t.Name,
-		Item:      toPut,
+		TableName:                 &t.Name,
+		Item:                      toPut,
+		ExpressionAttributeValues: fromMap(values),
+		ConditionExpression:       expr,
 	})
 
 	return item, err

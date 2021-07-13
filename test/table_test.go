@@ -109,7 +109,7 @@ func TestTable_Scan_all(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, item2, putValue2)
 
-	scan, err := table.Scan(dynago.All())
+	scan, err := table.ScanAll()
 	assert.NoError(t, err)
 
 	value1, ok1 := scan[0].(testTable)
@@ -119,6 +119,30 @@ func TestTable_Scan_all(t *testing.T) {
 	value2, ok2 := scan[1].(testTable)
 	assert.True(t, ok2)
 	assert.Equal(t, testTable{456, "def"}, value2)
+}
+
+func TestTable_Put_conditionFails(t *testing.T) {
+	process := setupLocalDynamo()
+	defer func() { panicOnError(process.Kill()) }()
+
+	_, _ = dynago.CreateTable("testTable", testTable{})
+	table, _ := dynago.NewTable("testTable", testTable{})
+
+	item := testTable{68, "abc"}
+	_, err := table.PutWithCondition(dynago.Gte("Id", dynago.N(69)), item)
+	assert.Error(t, err)
+}
+
+func TestTable_Put_conditionPasses(t *testing.T) {
+	process := setupLocalDynamo()
+	defer func() { panicOnError(process.Kill()) }()
+
+	_, _ = dynago.CreateTable("testTable", testTable{})
+	table, _ := dynago.NewTable("testTable", testTable{})
+
+	item := testTable{69, "abc"}
+	_, err := table.PutWithCondition(dynago.Gte("Id", dynago.N(69)), item)
+	assert.Error(t, err)
 }
 
 type testTable struct {
