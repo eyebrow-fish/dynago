@@ -19,21 +19,8 @@ func NewTable(name string, schema interface{}) (*Table, error) {
 	return &Table{*output.Table.TableName, schema}, nil
 }
 
-func (t Table) Query(conditions ...Condition) ([]interface{}, error) {
-	var expr string
-	attributeValues := make(map[string]interface{})
-	for i, condition := range conditions {
-		var del string
-		if i < len(conditions)-1 {
-			del = " and "
-		}
-
-		expr += condition.String() + del
-
-		attributeValues[":"+condition.fieldName] = condition.rawValue()
-	}
-
-	return t.QueryWithExpr(expr, attributeValues)
+func (t Table) Query(condition Condition) ([]interface{}, error) {
+	return t.QueryWithExpr(condition.buildExpr())
 }
 
 func (t Table) QueryWithExpr(expr string, values map[string]interface{}) ([]interface{}, error) {
