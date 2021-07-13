@@ -1,36 +1,55 @@
 package dynago
 
-import (
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	"strconv"
-)
-
 type Condition struct {
 	fieldName     string
 	values        []Value
 	conditionType conditionType
 }
 
-func Equals(fieldName string, value Value) Condition { return Condition{fieldName, []Value{value}, eq} }
-func NotEquals(fieldName string, value Value) Condition {
-	return Condition{fieldName, []Value{value}, neq}
+func (c Condition) rawValue() (rawValue interface{}) {
+	switch c.conditionType {
+	case bt, in:
+		for _, value := range c.values {
+			rawValue = append(rawValue.([]interface{}), value.raw)
+		}
+	default:
+		rawValue = c.values[0].raw
+	}
+
+	return
 }
-func LessThan(fieldName string, value Value) Condition {
-	return Condition{fieldName, []Value{value}, lt}
+
+func (c Condition) String() string {
+	switch c.conditionType {
+	case eq:
+		return c.fieldName + " = :" + c.fieldName
+	case neq:
+		return c.fieldName + " != :" + c.fieldName
+	case lt:
+		return c.fieldName + " < :" + c.fieldName
+	case lte:
+		return c.fieldName + " <= :" + c.fieldName
+	case gt:
+		return c.fieldName + " > :" + c.fieldName
+	case gte:
+		return c.fieldName + " >= :" + c.fieldName
+	case bt:
+		return c.fieldName + " between :" + c.fieldName + "_lower and :" + c.fieldName + "_upper"
+	default:
+		return c.fieldName + " in :" + c.fieldName
+	}
 }
-func LessThanOrEquals(fieldName string, value Value) Condition {
-	return Condition{fieldName, []Value{value}, lte}
-}
-func GreaterThan(fieldName string, value Value) Condition {
-	return Condition{fieldName, []Value{value}, gt}
-}
-func GreaterThanOrEquals(fieldName string, value Value) Condition {
-	return Condition{fieldName, []Value{value}, gte}
-}
-func Between(fieldName string, lower, upper Value) Condition {
+
+func Eq(fieldName string, value Value) Condition     { return Condition{fieldName, []Value{value}, eq} }
+func Neq(fieldName string, value Value) Condition    { return Condition{fieldName, []Value{value}, neq} }
+func Lt(fieldName string, value Value) Condition     { return Condition{fieldName, []Value{value}, lt} }
+func Lte(fieldName string, value Value) Condition    { return Condition{fieldName, []Value{value}, lte} }
+func Gt(fieldName string, value Value) Condition     { return Condition{fieldName, []Value{value}, gt} }
+func Gte(fieldName string, value Value) Condition    { return Condition{fieldName, []Value{value}, gte} }
+func In(fieldName string, values ...Value) Condition { return Condition{fieldName, values, in} }
+func Bt(fieldName string, lower, upper Value) Condition {
 	return Condition{fieldName, []Value{lower, upper}, bt}
 }
-func In(fieldName string, values ...Value) Condition { return Condition{fieldName, values, in} }
 
 type conditionType uint8
 
@@ -41,41 +60,18 @@ const (
 	lte
 	gt
 	gte
-	bt
 	in
+	bt
 )
 
-type Value struct {
-	attrValue types.AttributeValue
-}
+type Value struct{ raw interface{} }
 
-func String(value string) Value    { return Value{&types.AttributeValueMemberS{Value: value}} }
-func Number(value int) Value       { return Value{&types.AttributeValueMemberN{Value: strconv.Itoa(value)}} }
-func Bool(value bool) Value        { return Value{&types.AttributeValueMemberBOOL{Value: value}} }
-func Bytes(value []byte) Value     { return Value{&types.AttributeValueMemberB{Value: value}} }
-func Strings(value []string) Value { return Value{&types.AttributeValueMemberSS{Value: value}} }
-func Bytes2d(value [][]byte) Value { return Value{&types.AttributeValueMemberBS{Value: value}} }
-func Numbers(value []int) Value {
-	var numbers []string
-	for _, v := range value {
-		numbers = append(numbers, strconv.Itoa(v))
-	}
-
-	return Value{&types.AttributeValueMemberNS{Value: numbers}}
-}
-func Map(value map[string]interface{}) Value {
-	mapValue := make(map[string]types.AttributeValue)
-	for k, v := range value {
-		mapValue[k] = toAttributeValue(v)
-	}
-
-	return Value{&types.AttributeValueMemberM{Value: mapValue}}
-}
-func List(value []interface{}) Value {
-	var attributes []types.AttributeValue
-	for _, v := range value {
-		attributes = append(attributes, toAttributeValue(v))
-	}
-
-	return Value{&types.AttributeValueMemberL{Value: attributes}}
-}
+func S(value string) Value                 { return Value{value} }
+func N(value int) Value                    { return Value{value} }
+func BOOL(value bool) Value                { return Value{value} }
+func B(value []byte) Value                 { return Value{value} }
+func SS(value []string) Value              { return Value{value} }
+func BS(value [][]byte) Value              { return Value{value} }
+func NS(value []int) Value                 { return Value{value} }
+func M(value map[string]interface{}) Value { return Value{value} }
+func L(value []interface{}) Value          { return Value{value} }

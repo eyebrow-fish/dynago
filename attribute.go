@@ -141,6 +141,14 @@ func toAttributeValue(value interface{}) types.AttributeValue {
 		}
 
 		return &types.AttributeValueMemberM{Value: mapValues}
+	case []interface{}:
+		var values []types.AttributeValue
+
+		for _, v := range value.([]interface{}) {
+			values = append(values, toAttributeValue(v))
+		}
+
+		return &types.AttributeValueMemberL{Value: values}
 	default:
 		return &types.AttributeValueMemberBOOL{Value: value.(bool)}
 	}
@@ -162,6 +170,8 @@ func toAttributeType(value interface{}) (types.ScalarAttributeType, error) {
 		return "BS", nil
 	case map[string]interface{}, struct{}:
 		return "M", nil
+	case []interface{}:
+		return "L", nil
 	case bool:
 		return "BOOL", nil
 	default:

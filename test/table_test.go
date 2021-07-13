@@ -47,6 +47,27 @@ func TestTable_QueryWithExpr(t *testing.T) {
 	assert.Equal(t, testTable{123, "abc"}, value)
 }
 
+func TestTable_QueryWithCondition(t *testing.T) {
+	process := setupLocalDynamo()
+	defer func() { panicOnError(process.Kill()) }()
+
+	_, _ = dynago.CreateTable("testTable", testTable{})
+	table, _ := dynago.NewTable("testTable", testTable{})
+
+	item := testTable{123, "abc"}
+	putValue, err := table.Put(item)
+	assert.NoError(t, err)
+	assert.Equal(t, putValue, item)
+
+	testValue, err := table.Query(dynago.Eq("Id", dynago.N(123)))
+	assert.NoError(t, err)
+	assert.NotEmpty(t, testValue)
+
+	value, ok := testValue[0].(testTable)
+	assert.True(t, ok)
+	assert.Equal(t, testTable{123, "abc"}, value)
+}
+
 func TestTable_Scan(t *testing.T) {
 	process := setupLocalDynamo()
 	defer func() { panicOnError(process.Kill()) }()
