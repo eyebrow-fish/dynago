@@ -22,14 +22,15 @@ func NewTable(name string, schema interface{}) (*Table, error) {
 
 func (t Table) Query(condition Condition) ([]interface{}, error) {
 	expr, values := condition.buildExpr()
-	return t.QueryWithExpr(*expr, values)
+	return t.QueryWithExpr(*expr, values, condition.options.limit)
 }
 
-func (t Table) QueryWithExpr(expr string, values map[string]interface{}) ([]interface{}, error) {
+func (t Table) QueryWithExpr(expr string, values map[string]interface{}, limit *int32) ([]interface{}, error) {
 	output, err := dbClient.Query(dbCtx, &dynamodb.QueryInput{
 		TableName:                 &t.Name,
 		ExpressionAttributeValues: fromMap(values),
 		KeyConditionExpression:    &expr,
+		Limit:                     limit,
 	})
 
 	if err != nil {
@@ -48,6 +49,7 @@ func (t Table) Scan(condition Condition) ([]interface{}, error) {
 		TableName:                 &t.Name,
 		ExpressionAttributeValues: fromMap(values),
 		FilterExpression:          expr,
+		Limit:                     condition.options.limit,
 	})
 
 	if err != nil {

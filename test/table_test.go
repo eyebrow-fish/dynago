@@ -36,7 +36,7 @@ func (s *QuerySuite) TestQueryWithExpr() {
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), putValue, item)
 
-	testValue, err := table.QueryWithExpr("Id = :Id", map[string]interface{}{":Id": 123})
+	testValue, err := table.QueryWithExpr("Id = :Id", map[string]interface{}{":Id": 123}, nil)
 	assert.NoError(s.T(), err)
 	assert.NotEmpty(s.T(), testValue)
 
@@ -82,6 +82,30 @@ func (s *QuerySuite) TestConditionsOnAllFields() {
 	assert.Equal(s.T(), testTable{123, "abc"}, value)
 }
 
+func (s *QuerySuite) TestLimit1() {
+	table, _ := dynago.CreateTable("testTable", testTable{})
+
+	item0 := testTable{123, "abc"}
+	putValue0, err := table.Put(item0)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), putValue0, item0)
+
+	item1 := testTable{123, "def"}
+	putValue1, err := table.Put(item1)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), putValue1, item1)
+
+	testValue, err := table.Query(
+		dynago.Eq("Id", dynago.N(123)).WithLimit(1),
+	)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), 1, len(testValue))
+
+	value, ok := testValue[0].(testTable)
+	assert.True(s.T(), ok)
+	assert.Equal(s.T(), testTable{123, "abc"}, value)
+}
+
 func TestQuery(t *testing.T) { suite.Run(t, new(QuerySuite)) }
 
 type ScanSuite struct{ dynamoSuite }
@@ -109,6 +133,28 @@ func (s *ScanSuite) TestAll() {
 	value2, ok2 := scan[1].(testTable)
 	assert.True(s.T(), ok2)
 	assert.Equal(s.T(), testTable{456, "def"}, value2)
+}
+
+func (s *ScanSuite) TestLimit1() {
+	table, _ := dynago.CreateTable("testTable", testTable{})
+
+	item1 := testTable{123, "abc"}
+	putValue1, err := table.Put(item1)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), item1, putValue1)
+
+	item2 := testTable{456, "def"}
+	putValue2, err := table.Put(item2)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), item2, putValue2)
+
+	scan, err := table.Scan(dynago.All().WithLimit(1))
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), 1, len(scan))
+
+	value1, ok1 := scan[0].(testTable)
+	assert.True(s.T(), ok1)
+	assert.Equal(s.T(), testTable{123, "abc"}, value1)
 }
 
 func TestScan(t *testing.T) { suite.Run(t, new(ScanSuite)) }

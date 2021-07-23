@@ -5,6 +5,11 @@ type Condition struct {
 	values        []Value
 	conditionType conditionType
 	childClause   *conditionChildClause
+	options       *conditionOptions
+}
+
+type conditionOptions struct {
+	limit *int32
 }
 
 // DynamoDb has a gigantic list of reserved keywords.
@@ -48,12 +53,20 @@ func (c Condition) rawValue() (rawValue interface{}) {
 
 func (c Condition) And(condition Condition) Condition {
 	c.childClause = &conditionChildClause{and, condition}
+	c.childClause.cond.options = c.options
 
 	return c
 }
 
 func (c Condition) Or(condition Condition) Condition {
 	c.childClause = &conditionChildClause{or, condition}
+	c.childClause.cond.options = c.options
+
+	return c
+}
+
+func (c Condition) WithLimit(limit int32) Condition {
+	c.options.limit = &limit
 
 	return c
 }
@@ -75,35 +88,33 @@ func (c Condition) String() string {
 		return c.fieldName + " >= :" + name
 	case bt:
 		return c.fieldName + " between :" + name + "_lower and :" + name + "_upper"
-	default:
+	case in:
 		return c.fieldName + " in :" + name
+	default:
+		return "" // Special cases
 	}
 }
 
-func All() Condition { return Condition{conditionType: all} }
-func Eq(fieldName string, value Value) Condition {
-	return Condition{fieldName: fieldName, values: []Value{value}, conditionType: eq}
-}
+func All() Condition                             { return Condition{conditionType: all, options: new(conditionOptions)} }
+func Eq(fieldName string, value Value) Condition { return newCondition(fieldName, []Value{value}, eq) }
 func Neq(fieldName string, value Value) Condition {
-	return Condition{fieldName: fieldName, values: []Value{value}, conditionType: neq}
+	return newCondition(fieldName, []Value{value}, neq)
 }
-func Lt(fieldName string, value Value) Condition {
-	return Condition{fieldName: fieldName, values: []Value{value}, conditionType: lt}
-}
+func Lt(fieldName string, value Value) Condition { return newCondition(fieldName, []Value{value}, lt) }
 func Lte(fieldName string, value Value) Condition {
-	return Condition{fieldName: fieldName, values: []Value{value}, conditionType: lte}
+	return newCondition(fieldName, []Value{value}, lte)
 }
-func Gt(fieldName string, value Value) Condition {
-	return Condition{fieldName: fieldName, values: []Value{value}, conditionType: gt}
-}
+func Gt(fieldName string, value Value) Condition { return newCondition(fieldName, []Value{value}, gt) }
 func Gte(fieldName string, value Value) Condition {
-	return Condition{fieldName: fieldName, values: []Value{value}, conditionType: gte}
+	return newCondition(fieldName, []Value{value}, gte)
 }
-func In(fieldName string, values ...Value) Condition {
-	return Condition{fieldName: fieldName, values: values, conditionType: in}
-}
+func In(fieldName string, values ...Value) Condition { return newCondition(fieldName, values, in) }
 func Bt(fieldName string, lower, upper Value) Condition {
-	return Condition{fieldName: fieldName, values: []Value{lower, upper}, conditionType: bt}
+	return newCondition(fieldName, []Value{lower, upper}, bt)
+}
+
+func newCondition(fieldName string, values []Value, ct conditionType) Condition {
+	return Condition{fieldName, values, ct, nil, new(conditionOptions)}
 }
 
 type conditionType uint8
@@ -129,8 +140,10 @@ func (c conditionChildClause) opString() string {
 	switch c.boolOp {
 	case and:
 		return " and "
-	default:
+	case or:
 		return " or "
+	default:
+		return "" // Special cases
 	}
 }
 
@@ -139,6 +152,7 @@ type boolOp uint8
 const (
 	and boolOp = iota
 	or
+	limit
 )
 
 type Value struct{ raw interface{} }
