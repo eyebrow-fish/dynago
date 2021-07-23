@@ -152,7 +152,6 @@ type boolOp uint8
 const (
 	and boolOp = iota
 	or
-	limit
 )
 
 type Value struct{ raw interface{} }
