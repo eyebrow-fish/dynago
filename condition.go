@@ -41,6 +41,7 @@ func (c Condition) buildExpr() (*string, map[string]interface{}) {
 func (c Condition) rawValue() (rawValue interface{}) {
 	switch c.conditionType {
 	case bt, in:
+		rawValue = []interface{}{}
 		for _, value := range c.values {
 			rawValue = append(rawValue.([]interface{}), value.raw)
 		}

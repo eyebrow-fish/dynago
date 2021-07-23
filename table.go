@@ -72,5 +72,24 @@ func (t Table) PutWithCondition(condition Condition, item interface{}) (interfac
 		ConditionExpression:       expr,
 	})
 
-	return item, err
+	if err != nil {
+		return nil, err
+	}
+
+	return item, nil
+}
+
+func (t Table) DeleteItem(item interface{}) (interface{}, error) {
+	toDelete := buildItem(item)
+
+	_, err := dbClient.DeleteItem(dbCtx, &dynamodb.DeleteItemInput{
+		TableName: &t.Name,
+		Key:       toDelete,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return item, nil
 }

@@ -179,6 +179,36 @@ func (s *PutSuite) ConditionPasses() {
 
 func TestPut(t *testing.T) { suite.Run(t, new(PutSuite)) }
 
+type DeleteSuite struct{ dynamoSuite }
+
+func (s DeleteSuite) TestDeleteItem() {
+	table, _ := dynago.CreateTable("testTable", testTable{})
+
+	item1 := testTable{123, "abc"}
+	putValue1, err := table.Put(item1)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), item1, putValue1)
+
+	item2 := testTable{456, "def"}
+	putValue2, err := table.Put(item2)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), item2, putValue2)
+
+	deleted, err := table.DeleteItem(item1)
+
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), item1, deleted)
+
+	remaining, err := table.ScanAll()
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), 1, len(remaining))
+	assert.Equal(s.T(), testTable{456, "def"}, remaining[0])
+}
+
+func TestDelete(t *testing.T) {
+	suite.Run(t, new(DeleteSuite))
+}
+
 type testTable struct {
 	Id       int
 	FullName string
