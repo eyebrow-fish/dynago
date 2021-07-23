@@ -2,14 +2,24 @@ package test
 
 import (
 	"context"
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"os"
 	"os/exec"
 	"path/filepath"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/stretchr/testify/suite"
+
 	"github.com/eyebrow-fish/dynago"
 )
+
+type dynamoSuite struct {
+	suite.Suite
+	process *os.Process
+}
+
+func (s *dynamoSuite) SetupTest()    { s.process = setupLocalDynamo() }
+func (s *dynamoSuite) TearDownTest() { panicOnError(s.process.Kill()) }
 
 func setupLocalDynamo() *os.Process {
 	homeDir, err := os.UserHomeDir()

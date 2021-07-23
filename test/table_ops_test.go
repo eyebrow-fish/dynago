@@ -1,37 +1,35 @@
 package test
 
 import (
+	"testing"
+
 	"github.com/eyebrow-fish/dynago"
 	"github.com/stretchr/testify/assert"
-	"testing"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestCreateTable(t *testing.T) {
-	process := setupLocalDynamo()
-	defer func() { panicOnError(process.Kill()) }()
+type CreateTableSuite struct{ dynamoSuite }
 
+func (s *CreateTableSuite) TestHappyPath() {
 	table, err := dynago.CreateTable("testTable", testTable{})
-	assert.NoError(t, err)
-	assert.NotNil(t, table)
-	assert.Equal(t, &dynago.Table{Name: "testTable", Schema: testTable{}}, table)
+
+	assert.NoError(s.T(), err)
+	assert.NotNil(s.T(), table)
+	assert.Equal(s.T(), &dynago.Table{Name: "testTable", Schema: testTable{}}, table)
 }
 
-func TestCreateTable_duplicate(t *testing.T) {
-	process := setupLocalDynamo()
-	defer func() { panicOnError(process.Kill()) }()
-
+func (s *CreateTableSuite) TestDuplicate() {
 	_, _ = dynago.CreateTable("testTable", testTable{})
 	_, err := dynago.CreateTable("testTable", testTable{})
-	assert.Error(t, err)
+	assert.Error(s.T(), err)
 }
 
-func TestCreateTable_noHash(t *testing.T) {
-	process := setupLocalDynamo()
-	defer func() { panicOnError(process.Kill()) }()
-
+func (s *CreateTableSuite) TestNoHash() {
 	_, err := dynago.CreateTable("testTable", struct{}{})
-	assert.Error(t, err)
+	assert.Error(s.T(), err)
 }
+
+func TestCreateTable(t *testing.T) { suite.Run(t, new(CreateTableSuite)) }
 
 func TestListTables(t *testing.T) {
 	process := setupLocalDynamo()
