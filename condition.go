@@ -95,25 +95,19 @@ func (c Condition) String() string {
 	}
 }
 
-func All() Condition                             { return Condition{conditionType: all, options: new(conditionOptions)} }
-func Eq(fieldName string, value Value) Condition { return newCondition(fieldName, []Value{value}, eq) }
-func Neq(fieldName string, value Value) Condition {
-	return newCondition(fieldName, []Value{value}, neq)
-}
-func Lt(fieldName string, value Value) Condition { return newCondition(fieldName, []Value{value}, lt) }
-func Lte(fieldName string, value Value) Condition {
-	return newCondition(fieldName, []Value{value}, lte)
-}
-func Gt(fieldName string, value Value) Condition { return newCondition(fieldName, []Value{value}, gt) }
-func Gte(fieldName string, value Value) Condition {
-	return newCondition(fieldName, []Value{value}, gte)
-}
-func In(fieldName string, values ...Value) Condition { return newCondition(fieldName, values, in) }
+func All() Condition                                 { return Condition{conditionType: all, options: new(conditionOptions)} }
+func Eq(fieldName string, value Value) Condition     { return newCond(fieldName, []Value{value}, eq) }
+func Neq(fieldName string, value Value) Condition    { return newCond(fieldName, []Value{value}, neq) }
+func Lt(fieldName string, value Value) Condition     { return newCond(fieldName, []Value{value}, lt) }
+func Lte(fieldName string, value Value) Condition    { return newCond(fieldName, []Value{value}, lte) }
+func Gt(fieldName string, value Value) Condition     { return newCond(fieldName, []Value{value}, gt) }
+func Gte(fieldName string, value Value) Condition    { return newCond(fieldName, []Value{value}, gte) }
+func In(fieldName string, values ...Value) Condition { return newCond(fieldName, values, in) }
 func Bt(fieldName string, lower, upper Value) Condition {
-	return newCondition(fieldName, []Value{lower, upper}, bt)
+	return newCond(fieldName, []Value{lower, upper}, bt)
 }
 
-func newCondition(fieldName string, values []Value, ct conditionType) Condition {
+func newCond(fieldName string, values []Value, ct conditionType) Condition {
 	return Condition{fieldName, values, ct, nil, new(conditionOptions)}
 }
 
