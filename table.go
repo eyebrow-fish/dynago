@@ -2,6 +2,7 @@ package dynago
 
 import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
 type Table struct {
@@ -92,4 +93,28 @@ func (t Table) DeleteItem(item interface{}) (interface{}, error) {
 	}
 
 	return item, nil
+}
+
+func (t Table) Delete(condition Condition) (interface{}, error) {
+	items, err := t.Query(condition)
+	if err != nil {
+		return nil, err
+	}
+
+	var writes []types.WriteRequest
+	for _, item := range items {
+		writes = append(writes, types.WriteRequest{DeleteRequest: &types.DeleteRequest{
+			Key: buildItem(item),
+		}})
+	}
+
+	_, err = dbClient.BatchWriteItem(dbCtx, &dynamodb.BatchWriteItemInput{
+		RequestItems: map[string][]types.WriteRequest{t.Name: writes},
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return items, nil
 }

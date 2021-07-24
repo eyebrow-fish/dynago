@@ -40,7 +40,7 @@ func (c Condition) buildExpr() (*string, map[string]interface{}) {
 
 func (c Condition) rawValue() (rawValue interface{}) {
 	switch c.conditionType {
-	case bt, in:
+	case bt:
 		rawValue = []interface{}{}
 		for _, value := range c.values {
 			rawValue = append(rawValue.([]interface{}), value.raw)
@@ -89,21 +89,18 @@ func (c Condition) String() string {
 		return c.fieldName + " >= :" + name
 	case bt:
 		return c.fieldName + " between :" + name + "_lower and :" + name + "_upper"
-	case in:
-		return c.fieldName + " in :" + name
 	default:
 		return "" // Special cases
 	}
 }
 
-func All() Condition                                 { return Condition{conditionType: all, options: new(conditionOptions)} }
-func Eq(fieldName string, value Value) Condition     { return newCond(fieldName, []Value{value}, eq) }
-func Neq(fieldName string, value Value) Condition    { return newCond(fieldName, []Value{value}, neq) }
-func Lt(fieldName string, value Value) Condition     { return newCond(fieldName, []Value{value}, lt) }
-func Lte(fieldName string, value Value) Condition    { return newCond(fieldName, []Value{value}, lte) }
-func Gt(fieldName string, value Value) Condition     { return newCond(fieldName, []Value{value}, gt) }
-func Gte(fieldName string, value Value) Condition    { return newCond(fieldName, []Value{value}, gte) }
-func In(fieldName string, values ...Value) Condition { return newCond(fieldName, values, in) }
+func All() Condition                              { return Condition{conditionType: all, options: new(conditionOptions)} }
+func Eq(fieldName string, value Value) Condition  { return newCond(fieldName, []Value{value}, eq) }
+func Neq(fieldName string, value Value) Condition { return newCond(fieldName, []Value{value}, neq) }
+func Lt(fieldName string, value Value) Condition  { return newCond(fieldName, []Value{value}, lt) }
+func Lte(fieldName string, value Value) Condition { return newCond(fieldName, []Value{value}, lte) }
+func Gt(fieldName string, value Value) Condition  { return newCond(fieldName, []Value{value}, gt) }
+func Gte(fieldName string, value Value) Condition { return newCond(fieldName, []Value{value}, gte) }
 func Bt(fieldName string, lower, upper Value) Condition {
 	return newCond(fieldName, []Value{lower, upper}, bt)
 }
@@ -121,7 +118,6 @@ const (
 	lte
 	gt
 	gte
-	in
 	bt
 	all
 )

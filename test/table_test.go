@@ -205,6 +205,29 @@ func (s DeleteSuite) TestDeleteItem() {
 	assert.Equal(s.T(), testTable{456, "def"}, remaining[0])
 }
 
+func (s DeleteSuite) TestDelete() {
+	table, _ := dynago.CreateTable("testTable", testTable{})
+
+	item1 := testTable{123, "abc"}
+	putValue1, err := table.Put(item1)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), item1, putValue1)
+
+	item2 := testTable{123, "def"}
+	putValue2, err := table.Put(item2)
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), item2, putValue2)
+
+	deleted, err := table.Delete(dynago.Eq("Id", dynago.N(123)))
+
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), []interface{}{item1, item2}, deleted)
+
+	remaining, err := table.ScanAll()
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), 0, len(remaining))
+}
+
 func TestDelete(t *testing.T) {
 	suite.Run(t, new(DeleteSuite))
 }
