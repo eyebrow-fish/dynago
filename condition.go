@@ -1,5 +1,12 @@
 package dynago
 
+// Condition is a magical (not really) way to create
+// expressions for DynamoDb. This is seen on countless different
+// operations and this way, it's a lot more safe.
+//
+//  // Finding a really old rabbit
+//  oldBoy, err := table.Query(dynago.Eq("Animal", dynago.S("Rabbit")).
+// 	  And(dynago.Gte("Age", dynago.N(20)))
 type Condition struct {
 	fieldName     string
 	values        []Value

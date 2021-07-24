@@ -9,6 +9,13 @@ not be particularly developer-friendly.
 
 The local dynamodb JAR is a must. Without this you cannot run the tests.
 
+**Setup**:
+
+- Download the
+  JAR [here](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.DownloadingAndRunning.html)
+- Unzip to `~/dev/dynamo-local-lib` *(eg. unzip dynamodb_local_latest.zip -d ~/dev/dynamo-local-lib)*
+- You're done! Tests **SHOULD** just work.
+
 # example
 
 Queries, scans, puts, and deletions are fundamental to `dynago`. These are all available once a `Table` is initialized
@@ -52,10 +59,3 @@ func main() {
 	// TODO: Update "PresidentialTerms" of new President
 }
 ```
-
-**Setup**:
-
-- Download the
-  JAR [here](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.DownloadingAndRunning.html)
-- Unzip to `~/dev/dynamo-local-lib` *(eg. unzip dynamodb_local_latest.zip -d ~/dev/dynamo-local-lib)*
-- You're done! Tests **SHOULD** just work.
