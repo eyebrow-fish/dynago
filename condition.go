@@ -59,13 +59,6 @@ func (c Condition) And(condition Condition) Condition {
 	return c
 }
 
-func (c Condition) Or(condition Condition) Condition {
-	c.childClause = &conditionChildClause{or, condition}
-	c.childClause.cond.options = c.options
-
-	return c
-}
-
 func (c Condition) WithLimit(limit int32) Condition {
 	c.options.limit = &limit
 
@@ -131,10 +124,8 @@ func (c conditionChildClause) opString() string {
 	switch c.boolOp {
 	case and:
 		return " and "
-	case or:
-		return " or "
 	default:
-		return "" // Special cases
+		return "" // Future cases
 	}
 }
 
@@ -142,7 +133,6 @@ type boolOp uint8
 
 const (
 	and boolOp = iota
-	or
 )
 
 type Value struct{ raw interface{} }
