@@ -1,50 +1,61 @@
 # dynago
 
-`dynago` is a super easy to use [DynamoDb](https://aws.amazon.com/dynamodb) library for [golang](https://golang.org).
-The philosophy behind `dynago` is to keep it simple. This removes the need for complex data structures to represent
-queries and mutations.
+`dynago` is an extensive wrapper around the [AWS Go Sdk (V2)](https://github.com/aws/aws-sdk-go-v2) — which I find to
+not be particularly developer-friendly.
 
-# features
+**CURRENTLY BEING REWRITTEN**
 
-`dynago` is currently in a usable state, but it is decently unstable.
+# development
 
-There are a small set of features currently developed:
- - Projections (uses table `dataType`)
- - Queries
- - Scans
- - Deletes
- - Puts
+The local dynamodb JAR is a must. Without this you cannot run the tests.
 
 # example
 
-A simple `Query` example.
+Queries, scans, puts, and deletions are fundamental to `dynago`. These are all available once a `Table` is initialized
+with a schema given by an interface. Here is a simple example:
 
 ```go
 package main
 
 import (
-    "fmt"
-    "github.com/eyebrow-fish/dynago"
-    "log"
+	"fmt"
+	"github.com/eyebrow-fish/dynago"
 )
 
-type GenericItem struct {
-    Part string
-    Sort int
+type Person struct {
+	Country           string
+	Age               uint8
+	FirstName         string
+	LastName          string
+	PresidentialTerms uint8
 }
 
+// Let's create a slice of eligible presidents in the USA.
 func main() {
-    table, err := dynago.NewTable("my-table", GenericItem{})
-    if err != nil {
-        log.Fatalf("could not init table client: %v", err)
-    }
-    resp, err := table.Query(
-        dynago.Equals("Part", dynago.NewVal("value")),
-        dynago.Equals("Sort", dynago.NewVal(1234567)),
-    )
-    if err != nil {
-        log.Fatalf("error in query: %v", err)
-    }
-    fmt.Println(resp[0].(GenericItem).Part)
+	person, err := dynago.NewTable("Person", Person{})
+	if err != nil {
+		panic(err) // TODO: Better error handling
+	}
+
+	eligiblePresidents, err := person.Query(
+		dynago.Eq("Country", dynago.S("United States of America")).
+			And(dynago.Gte("Age", dynago.N(35))).
+			And(dynago.Lt("PresidentialTerms", dynago.N(2))),
+	)
+	if err != nil {
+		panic(err) // Oh noes
+	}
+
+	fmt.Printf("Eligible presidents: %v\n", eligiblePresidents)
+
+	// TODO: Select new President
+	// TODO: Update "PresidentialTerms" of new President
 }
 ```
+
+**Setup**:
+
+- Download the
+  JAR [here](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.DownloadingAndRunning.html)
+- Unzip to `~/dev/dynamo-local-lib` *(eg. unzip dynamodb_local_latest.zip -d ~/dev/dynamo-local-lib)*
+- You're done! Tests **SHOULD** just work.

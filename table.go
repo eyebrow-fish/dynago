@@ -1,168 +1,120 @@
 package dynago
 
 import (
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"reflect"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
-// A Table is a DynamoDb table client.
-//
-// A Table is the primary way to interact with DynamoDb
-// and all queries and mutations are served through it.
-//
-// * Note that all tables initialized with the same
-// aws.Config will reuse the same dynamodb.DynamoDB client.
 type Table struct {
-	name     string
-	dataType interface{}
-	conf     *aws.Config
+	Name   string
+	Schema interface{}
 }
 
-// NewTable initializes a Table with the default
-// aws.Config.
-//
-// The name parameter is the name of the table in AWS.
-//
-// The dataType parameter should contain an empty
-// interface used for the queries and mutations of
-// the table.
-//
-// See NewTableWithConfig for more configuration.
-func NewTable(name string, dataType interface{}) (*Table, error) {
-	return NewTableWithConfig(name, dataType, *aws.NewConfig())
-}
-
-// NewTableWithConfig allows custom a aws.Config to be
-// passed in. Variables such as Region and Endpoint can be
-// configured when using this constructor. Otherwise, the
-// behavior is the same as NewTable.
-//
-// * Note that all tables initialized with the same
-// aws.Config will reuse the same dynamodb.DynamoDB client.
-func NewTableWithConfig(name string, dataType interface{}, conf aws.Config) (*Table, error) {
-	var confKey *aws.Config
-	for c := range dynamoConf {
-		if reflect.DeepEqual(*c, conf) {
-			confKey = c
-		}
-	}
-	if confKey == nil {
-		sess, err := session.NewSession(&conf)
-		if err != nil {
-			return nil, err
-		}
-		dynamoConf[&conf] = dynamodb.New(sess)
-		confKey = &conf
-	}
-	return &Table{name, dataType, confKey}, nil
-}
-
-// Query is a method which queries items on a Table.
-//
-// The response of Query will be items which matches the
-// Cond(s) given. Additionally, the structure will match
-// the dataType parameter given to the Table constructor.
-func (t *Table) Query(cons ...Cond) ([]interface{}, error) {
-	keyCons, err := buildAvCons(cons)
+// NewTable creates a new Table.
+// A Table cannot be created if the Table does not exist in DynamoDb.
+func NewTable(name string, schema interface{}) (*Table, error) {
+	output, err := dbClient.DescribeTable(dbCtx, &dynamodb.DescribeTableInput{TableName: &name})
 	if err != nil {
 		return nil, err
 	}
-	proj := projOf(t.dataType)
-	q := dynamodb.QueryInput{
-		TableName:            &t.name,
-		KeyConditions:        keyCons,
-		ProjectionExpression: &proj,
-	}
-	resp, err := t.dynamoClient().Query(&q)
+
+	return &Table{*output.Table.TableName, schema}, nil
+}
+
+func (t Table) Query(condition Condition) ([]interface{}, error) {
+	expr, values := condition.buildExpr()
+	return t.QueryWithExpr(*expr, values, condition.options.limit)
+}
+
+func (t Table) QueryWithExpr(expr string, values map[string]interface{}, limit *int32) ([]interface{}, error) {
+	output, err := dbClient.Query(dbCtx, &dynamodb.QueryInput{
+		TableName:                 &t.Name,
+		ExpressionAttributeValues: fromMap(values),
+		KeyConditionExpression:    &expr,
+		Limit:                     limit,
+	})
+
 	if err != nil {
 		return nil, err
 	}
-	return t.buildResp(resp.Items)
+
+	return constructItems(output.Items, t.Schema)
 }
 
-// Delete is a method for deleting items of a Table.
-//
-// When using Delete, the keys parameters determine which
-// items are deleted. The more keys provided, the more
-// fine grained the deletions are.
-func (t *Table) Delete(keys map[string]Val) error {
-	avKeys, err := toAvMap(keys)
-	if err != nil {
-		return err
-	}
-	d := dynamodb.DeleteItemInput{
-		TableName: &t.name,
-		Key:       avKeys,
-	}
-	_, err = t.dynamoClient().DeleteItem(&d)
-	return err
-}
+func (t Table) ScanAll() ([]interface{}, error) { return t.Scan(All()) }
 
-// Put is a method for inserting items into a Table.
-//
-// All items given to Put must match the structure of
-// the dataType of Table.
-func (t *Table) Put(item map[string]Val) error {
-	avItem, err := toAvMap(item)
-	if err != nil {
-		return err
-	}
-	p := dynamodb.PutItemInput{
-		TableName: &t.name,
-		Item:      avItem,
-	}
-	_, err = t.dynamoClient().PutItem(&p)
-	return err
-}
+func (t Table) Scan(condition Condition) ([]interface{}, error) {
+	expr, values := condition.buildExpr()
 
-// Scan is a method which scans over all items in a Table
-// and returns them if they match.
-//
-// This operation is slow and should only be used on smaller
-// tables or if you expect a slow response.
-//
-// A more proper solution is to structure your data better and
-// use Query.
-func (t *Table) Scan(cons ...Cond) (interface{}, error) {
-	keyCons, err := buildAvCons(cons)
+	output, err := dbClient.Scan(dbCtx, &dynamodb.ScanInput{
+		TableName:                 &t.Name,
+		ExpressionAttributeValues: fromMap(values),
+		FilterExpression:          expr,
+		Limit:                     condition.options.limit,
+	})
+
 	if err != nil {
 		return nil, err
 	}
-	proj := projOf(t.dataType)
-	s := dynamodb.ScanInput{
-		TableName:            &t.name,
-		ScanFilter:           keyCons,
-		ProjectionExpression: &proj,
-	}
-	resp, err := t.dynamoClient().Scan(&s)
+
+	return constructItems(output.Items, t.Schema)
+}
+
+func (t Table) Put(item interface{}) (interface{}, error) { return t.PutWithCondition(All(), item) }
+
+func (t Table) PutWithCondition(condition Condition, item interface{}) (interface{}, error) {
+	toPut := buildItem(item)
+	expr, values := condition.buildExpr()
+
+	_, err := dbClient.PutItem(dbCtx, &dynamodb.PutItemInput{
+		TableName:                 &t.Name,
+		Item:                      toPut,
+		ExpressionAttributeValues: fromMap(values),
+		ConditionExpression:       expr,
+	})
+
 	if err != nil {
 		return nil, err
 	}
-	return t.buildResp(resp.Items)
+
+	return item, nil
 }
 
-func (t *Table) dynamoClient() *dynamodb.DynamoDB {
-	return dynamoConf[t.conf]
+func (t Table) DeleteItem(item interface{}) (interface{}, error) {
+	toDelete := buildItem(item)
+
+	_, err := dbClient.DeleteItem(dbCtx, &dynamodb.DeleteItemInput{
+		TableName: &t.Name,
+		Key:       toDelete,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return item, nil
 }
 
-func (t *Table) buildResp(items []map[string]*dynamodb.AttributeValue) ([]interface{}, error) {
-	var values []interface{}
+func (t Table) Delete(condition Condition) (interface{}, error) {
+	items, err := t.Query(condition)
+	if err != nil {
+		return nil, err
+	}
+
+	var writes []types.WriteRequest
 	for _, item := range items {
-		val := reflect.New(reflect.TypeOf(t.dataType))
-		for k, v := range item {
-			value, err := buildValue(v)
-			if err != nil {
-				return nil, err
-			}
-			val.Elem().FieldByName(k).Set(reflect.ValueOf(value))
-		}
-		values = append(values, val.Elem().Interface())
+		writes = append(writes, types.WriteRequest{DeleteRequest: &types.DeleteRequest{
+			Key: buildItem(item),
+		}})
 	}
-	return values, nil
-}
 
-var (
-	dynamoConf = make(map[*aws.Config]*dynamodb.DynamoDB)
-)
+	_, err = dbClient.BatchWriteItem(dbCtx, &dynamodb.BatchWriteItemInput{
+		RequestItems: map[string][]types.WriteRequest{t.Name: writes},
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return items, nil
+}
