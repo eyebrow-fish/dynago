@@ -5,6 +5,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
+// Table provides all item operations for your DynamoDb Table.
+// This includes queries, scans, puts, deletions, etc.
+//
+// The operations performed on this Table will result in an
+// interface whose type is the same as the Schema field.
+// This is true unless an error is returned instead.
 type Table struct {
 	Name   string
 	Schema interface{}
@@ -12,6 +18,10 @@ type Table struct {
 
 // NewTable creates a new Table.
 // A Table cannot be created if the Table does not exist in DynamoDb.
+//
+// The operations performed on this Table will result in an
+// interface whose type is the same as the schema parameter.
+// This is true unless an error is returned instead.
 func NewTable(name string, schema interface{}) (*Table, error) {
 	output, err := dbClient.DescribeTable(dbCtx, &dynamodb.DescribeTableInput{TableName: &name})
 	if err != nil {
@@ -21,11 +31,30 @@ func NewTable(name string, schema interface{}) (*Table, error) {
 	return &Table{*output.Table.TableName, schema}, nil
 }
 
+// Query allows query operation access on the Table.
+// A Condition is given as an argument for easy usage.
+//
+// The result of Query, in the case of no error being returned,
+// will be the same type as your Table's schema.
+//
+//  // Don't forget to handle errors in your code!
+//  result, err := table.Query(dynago.Eq("Id", dynago.N(123)))
+//  data := result.(MySchema)
+//
 func (t Table) Query(condition Condition) ([]interface{}, error) {
 	expr, values := condition.buildExpr()
 	return t.QueryWithExpr(*expr, values, condition.options.limit)
 }
 
+// QueryWithExpr allows for lower level usage of your Table.
+// No fancy Condition construction, just a map of strings to interfaces
+// along with a query expression. A nillable limit is also required as a
+// parameter, but it can be set to nil if no limit is needed.
+//
+// Query actually wraps this function but translates the Condition into
+// the function parameters.
+//
+//  result, _ := table.QueryWithExpr("Id = :Id", map[string]interface{}{":Id": "123"}, nil)
 func (t Table) QueryWithExpr(expr string, values map[string]interface{}, limit *int32) ([]interface{}, error) {
 	output, err := dbClient.Query(dbCtx, &dynamodb.QueryInput{
 		TableName:                 &t.Name,
@@ -41,8 +70,16 @@ func (t Table) QueryWithExpr(expr string, values map[string]interface{}, limit *
 	return constructItems(output.Items, t.Schema)
 }
 
+// ScanAll simply scans all items in your Table and returns them.
+//
+// Scan operations normally are not fast unless your data set is small.
+// Do not use this on larger tables unless you know what you're doing.
 func (t Table) ScanAll() ([]interface{}, error) { return t.Scan(All()) }
 
+// Scan performs a basic item scan on your Table using the provided Condition.
+//
+// Scan operations normally are not fast unless your data set is small.
+// Do not use this on larger tables unless you know what you're doing.
 func (t Table) Scan(condition Condition) ([]interface{}, error) {
 	expr, values := condition.buildExpr()
 
@@ -60,8 +97,17 @@ func (t Table) Scan(condition Condition) ([]interface{}, error) {
 	return constructItems(output.Items, t.Schema)
 }
 
+// Put allows you to put an item into your Table.
+// This function will do it with no questions asked, unless
+// there was and underlying error.
+//
+// The returned value will be the put item, unless an error occurred.
+//
+//  put, err := dynago.Put(item)
 func (t Table) Put(item interface{}) (interface{}, error) { return t.PutWithCondition(All(), item) }
 
+// PutWithCondition behaves the same as Table.Put but it  accepts a
+// Condition that must be met before putting the given item.
 func (t Table) PutWithCondition(condition Condition, item interface{}) (interface{}, error) {
 	toPut := buildItem(item)
 	expr, values := condition.buildExpr()
@@ -80,6 +126,11 @@ func (t Table) PutWithCondition(condition Condition, item interface{}) (interfac
 	return item, nil
 }
 
+// DeleteItem attempts to delete the item from your Table.
+// Unless an error occurs, the returned value will be the item
+// that was deleted.
+//
+// For a more powerful deletion checkout Delete.
 func (t Table) DeleteItem(item interface{}) (interface{}, error) {
 	toDelete := buildItem(item)
 
@@ -95,6 +146,19 @@ func (t Table) DeleteItem(item interface{}) (interface{}, error) {
 	return item, nil
 }
 
+// Delete accepts a Condition as a predicate to compare against items
+// in the Table.
+// The items returned are the ones which were deleted, unless an error
+// occurred.
+//
+//  deleted, err := table.Delete(dynago.Bt("Age", dynago.N(0), dynago.N(17)))
+//  // Much needed error handling
+//  if len(deleted) >= 2_200_000_000 {
+//    log.Fatalln("We just deleted all children!")
+//	}
+//
+// Under the hood, a query is run with the given Condition and a bulk
+// deletion is attempted.
 func (t Table) Delete(condition Condition) (interface{}, error) {
 	items, err := t.Query(condition)
 	if err != nil {
