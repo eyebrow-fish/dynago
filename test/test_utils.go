@@ -13,15 +13,15 @@ import (
 	"github.com/eyebrow-fish/dynago"
 )
 
-type dynamoSuite struct {
+type DynamoSuite struct {
 	suite.Suite
 	process *os.Process
 }
 
-func (s *dynamoSuite) SetupTest()    { s.process = setupLocalDynamo() }
-func (s *dynamoSuite) TearDownTest() { panicOnError(s.process.Kill()) }
+func (s *DynamoSuite) SetupTest()    { s.process = SetupLocalDynamo() }
+func (s *DynamoSuite) TearDownTest() { panicOnError(s.process.Kill()) }
 
-func setupLocalDynamo() *os.Process {
+func SetupLocalDynamo() *os.Process {
 	homeDir, err := os.UserHomeDir()
 	panicOnError(err)
 

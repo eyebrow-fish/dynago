@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type NewTableSuite struct{ dynamoSuite }
+type NewTableSuite struct{ DynamoSuite }
 
 func (s *NewTableSuite) TestHappyPath() {
 	created, _ := dynago.CreateTable("testTable", testTable{})
@@ -26,7 +26,7 @@ func (s *NewTableSuite) TestNoTable() {
 
 func TestNewTable(t *testing.T) { suite.Run(t, new(NewTableSuite)) }
 
-type QuerySuite struct{ dynamoSuite }
+type QuerySuite struct{ DynamoSuite }
 
 func (s *QuerySuite) TestQueryWithExpr() {
 	table, _ := dynago.CreateTable("testTable", testTable{})
@@ -108,7 +108,7 @@ func (s *QuerySuite) TestLimit1() {
 
 func TestQuery(t *testing.T) { suite.Run(t, new(QuerySuite)) }
 
-type ScanSuite struct{ dynamoSuite }
+type ScanSuite struct{ DynamoSuite }
 
 func (s *ScanSuite) TestAll() {
 	table, _ := dynago.CreateTable("testTable", testTable{})
@@ -159,7 +159,7 @@ func (s *ScanSuite) TestLimit1() {
 
 func TestScan(t *testing.T) { suite.Run(t, new(ScanSuite)) }
 
-type PutSuite struct{ dynamoSuite }
+type PutSuite struct{ DynamoSuite }
 
 func (s *PutSuite) ConditionFails() {
 	table, _ := dynago.CreateTable("testTable", testTable{})
@@ -179,7 +179,7 @@ func (s *PutSuite) ConditionPasses() {
 
 func TestPut(t *testing.T) { suite.Run(t, new(PutSuite)) }
 
-type DeleteSuite struct{ dynamoSuite }
+type DeleteSuite struct{ DynamoSuite }
 
 func (s DeleteSuite) TestDeleteItem() {
 	table, _ := dynago.CreateTable("testTable", testTable{})

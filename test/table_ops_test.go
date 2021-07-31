@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type CreateTableSuite struct{ dynamoSuite }
+type CreateTableSuite struct{ DynamoSuite }
 
 func (s *CreateTableSuite) TestHappyPath() {
 	table, err := dynago.CreateTable("testTable", testTable{})
@@ -32,7 +32,7 @@ func (s *CreateTableSuite) TestNoHash() {
 func TestCreateTable(t *testing.T) { suite.Run(t, new(CreateTableSuite)) }
 
 func TestListTables(t *testing.T) {
-	process := setupLocalDynamo()
+	process := SetupLocalDynamo()
 	defer func() { panicOnError(process.Kill()) }()
 
 	_, _ = dynago.CreateTable("testTable1", testTable{})
