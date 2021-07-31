@@ -15,7 +15,7 @@ func (s *CreateTableSuite) TestHappyPath() {
 
 	assert.NoError(s.T(), err)
 	assert.NotNil(s.T(), table)
-	assert.Equal(s.T(), &dynago.Table{Name: "testTable", Schema: testTable{}}, table)
+	assert.Equal(s.T(), &dynago.Table{Name: "testTable", Schema: testTable{}, Projection: "Id,FullName"}, table)
 }
 
 func (s *CreateTableSuite) TestDuplicate() {

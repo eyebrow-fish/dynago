@@ -12,8 +12,9 @@ import (
 // interface whose type is the same as the Schema field.
 // This is true unless an error is returned instead.
 type Table struct {
-	Name   string
-	Schema interface{}
+	Name       string
+	Schema     interface{}
+	Projection string
 }
 
 // NewTable creates a new Table.
@@ -28,7 +29,7 @@ func NewTable(name string, schema interface{}) (*Table, error) {
 		return nil, err
 	}
 
-	return &Table{*output.Table.TableName, schema}, nil
+	return &Table{*output.Table.TableName, schema, buildProjection(schema)}, nil
 }
 
 // Query allows query operation access on the Table.
@@ -66,6 +67,7 @@ func (t Table) QueryWithExpr(expr string, values map[string]interface{}, limit *
 			KeyConditionExpression:    &expr,
 			Limit:                     limit,
 			ExclusiveStartKey:         lastKey,
+			ProjectionExpression:      &t.Projection,
 		})
 
 		if err != nil {
@@ -113,6 +115,7 @@ func (t Table) Scan(condition Condition) ([]interface{}, error) {
 			FilterExpression:          expr,
 			Limit:                     limit,
 			ExclusiveStartKey:         lastKey,
+			ProjectionExpression:      &t.Projection,
 		})
 
 		if err != nil {

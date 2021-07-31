@@ -80,7 +80,7 @@ func CreateTable(name string, schema interface{}) (*Table, error) {
 		return nil, err
 	}
 
-	return &Table{*output.TableDescription.TableName, schema}, nil
+	return &Table{*output.TableDescription.TableName, schema, buildProjection(schema)}, nil
 }
 
 // ListTables is a simple operation which returns the list of
