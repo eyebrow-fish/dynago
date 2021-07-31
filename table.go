@@ -3,6 +3,7 @@ package dynago
 import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"log"
 )
 
 // Table provides all item operations for your DynamoDb Table.
@@ -56,18 +57,37 @@ func (t Table) Query(condition Condition) ([]interface{}, error) {
 //
 //  result, _ := table.QueryWithExpr("Id = :Id", map[string]interface{}{":Id": "123"}, nil)
 func (t Table) QueryWithExpr(expr string, values map[string]interface{}, limit *int32) ([]interface{}, error) {
-	output, err := dbClient.Query(dbCtx, &dynamodb.QueryInput{
-		TableName:                 &t.Name,
-		ExpressionAttributeValues: fromMap(values),
-		KeyConditionExpression:    &expr,
-		Limit:                     limit,
-	})
+	var items []map[string]types.AttributeValue
 
-	if err != nil {
+	var doQuery func(lastKey map[string]types.AttributeValue) error
+	doQuery = func(lastKey map[string]types.AttributeValue) error {
+		output, err := dbClient.Query(dbCtx, &dynamodb.QueryInput{
+			TableName:                 &t.Name,
+			ExpressionAttributeValues: fromMap(values),
+			KeyConditionExpression:    &expr,
+			Limit:                     limit,
+		})
+
+		if err != nil {
+			return err
+		}
+
+		items = append(items, output.Items...)
+
+		// No LastEvaluatedKey or the given limit is met
+		if len(output.LastEvaluatedKey) > 0 && limit == nil || limit != nil && int32(len(items)) < *limit {
+			log.Println(len(output.LastEvaluatedKey), len(items))
+			return doQuery(output.LastEvaluatedKey)
+		}
+
+		return nil
+	}
+
+	if err := doQuery(nil); err != nil {
 		return nil, err
 	}
 
-	return constructItems(output.Items, t.Schema)
+	return constructItems(items, t.Schema)
 }
 
 // ScanAll simply scans all items in your Table and returns them.
