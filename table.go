@@ -3,7 +3,6 @@ package dynago
 import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	"log"
 )
 
 // Table provides all item operations for your DynamoDb Table.
@@ -66,6 +65,7 @@ func (t Table) QueryWithExpr(expr string, values map[string]interface{}, limit *
 			ExpressionAttributeValues: fromMap(values),
 			KeyConditionExpression:    &expr,
 			Limit:                     limit,
+			ExclusiveStartKey:         lastKey,
 		})
 
 		if err != nil {
@@ -76,7 +76,6 @@ func (t Table) QueryWithExpr(expr string, values map[string]interface{}, limit *
 
 		// No LastEvaluatedKey or the given limit is met
 		if len(output.LastEvaluatedKey) > 0 && limit == nil || limit != nil && int32(len(items)) < *limit {
-			log.Println(len(output.LastEvaluatedKey), len(items))
 			return doQuery(output.LastEvaluatedKey)
 		}
 
@@ -102,19 +101,39 @@ func (t Table) ScanAll() ([]interface{}, error) { return t.Scan(All()) }
 // Do not use this on larger tables unless you know what you're doing.
 func (t Table) Scan(condition Condition) ([]interface{}, error) {
 	expr, values := condition.buildExpr()
+	limit := condition.options.limit
 
-	output, err := dbClient.Scan(dbCtx, &dynamodb.ScanInput{
-		TableName:                 &t.Name,
-		ExpressionAttributeValues: fromMap(values),
-		FilterExpression:          expr,
-		Limit:                     condition.options.limit,
-	})
+	var items []map[string]types.AttributeValue
 
-	if err != nil {
+	var doScan func(lastKey map[string]types.AttributeValue) error
+	doScan = func(lastKey map[string]types.AttributeValue) error {
+		output, err := dbClient.Scan(dbCtx, &dynamodb.ScanInput{
+			TableName:                 &t.Name,
+			ExpressionAttributeValues: fromMap(values),
+			FilterExpression:          expr,
+			Limit:                     limit,
+			ExclusiveStartKey:         lastKey,
+		})
+
+		if err != nil {
+			return err
+		}
+
+		items = append(items, output.Items...)
+
+		// No LastEvaluatedKey or the given limit is met
+		if len(output.LastEvaluatedKey) > 0 && limit == nil || limit != nil && int32(len(items)) < *limit {
+			return doScan(output.LastEvaluatedKey)
+		}
+
+		return nil
+	}
+
+	if err := doScan(nil); err != nil {
 		return nil, err
 	}
 
-	return constructItems(output.Items, t.Schema)
+	return constructItems(items, t.Schema)
 }
 
 // Put allows you to put an item into your Table.
